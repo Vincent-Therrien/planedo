@@ -16,6 +16,7 @@
         <div class="control">
           <label for="distance-range">Max distance (ly)</label>
           <input id="distance-range" type="range" min="2" max="100" step="0.1" value="8" />
+          <p id="distance-summary" class="subtitle">-</p>
         </div>
 
         <div class="control">
@@ -38,7 +39,7 @@
         </div>
 
         <div class="control axis-toggle">
-          <label for="show-axes">Show axes</label>
+          <label for="show-axes">Show Equatorial Grid (RA/Dec)</label>
           <input id="show-axes" type="checkbox" />
         </div>
       </div>
@@ -48,6 +49,8 @@
         <p id="selection-status">Click a sphere to see details.</p>
         <p><strong>Name:</strong> <span id="planet-name">None</span></p>
         <p><strong>Type:</strong> <span id="planet-class">-</span></p>
+        <p><strong>RA:</strong> <span id="planet-ra">-</span></p>
+        <p><strong>Dec:</strong> <span id="planet-dec">-</span></p>
         <p><strong>Distance:</strong> <span id="planet-distance">-</span></p>
       </section>
     </aside>
@@ -74,7 +77,10 @@
     const statusEl = document.getElementById("selection-status");
     const nameEl = document.getElementById("planet-name");
     const classEl = document.getElementById("planet-class");
-    const distanceEl = document.getElementById("planet-distance");
+    const raEl = document.getElementById("planet-ra");
+    const decEl = document.getElementById("planet-dec");
+    const selectionDistanceEl = document.getElementById("planet-distance");
+    const distanceSummaryEl = document.getElementById("distance-summary");
     const distanceRangeEl = document.getElementById("distance-range");
     const planetTypeEl = document.getElementById("planet-type");
     const showLabelsEl = document.getElementById("show-labels");
@@ -84,6 +90,9 @@
     const pointRadius = 0.75;
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    const raLabelTextures = [];
+    const RA_BASE_RADIUS = 20;
+    const RA_TARGET_SCREEN_RADIUS_PX = 250;
 
     let axisRange = 100;
     let planets = [];
@@ -103,10 +112,6 @@
     controls.dampingFactor = 0.08;
     controls.target.set(0, 0, 0);
 
-    const axesHelper = new THREE.AxesHelper(100);
-    axesHelper.visible = false;
-    scene.add(axesHelper);
-
     const ambient = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambient);
 
@@ -115,7 +120,7 @@
     scene.add(pointLight);
 
     const earthGeometry = new THREE.SphereGeometry(pointRadius * 1.4, 16, 16);
-    const earthMaterial = new THREE.MeshStandardMaterial({ color: 0x2d7dff });
+    const earthMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
     const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
     earthMesh.userData = {
       name: "Earth",
@@ -127,6 +132,137 @@
 
     const planetGroup = new THREE.Group();
     scene.add(planetGroup);
+    const raGroup = new THREE.Group();
+    raGroup.visible = false;
+    scene.add(raGroup);
+
+    function createTextSprite(label, color, fontSize = 18) {
+      const canvasText = document.createElement("canvas");
+      const context = canvasText.getContext("2d");
+      const font = `${fontSize}px monospace`;
+      context.font = font;
+      const width = Math.ceil(context.measureText(label).width + 24);
+      const height = Math.ceil(fontSize * 1.8);
+      canvasText.width = width;
+      canvasText.height = height;
+
+      context.font = font;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillStyle = color;
+      context.fillText(label, width / 2, height / 2);
+
+      const texture = new THREE.CanvasTexture(canvasText);
+      texture.needsUpdate = true;
+      raLabelTextures.push(texture);
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.userData.isOverlayLabel = true;
+      const scaleFactor = 0.06;
+      sprite.scale.set(canvasText.width * scaleFactor, canvasText.height * scaleFactor, 1);
+      return sprite;
+    }
+
+    function clearRaVisualizer() {
+      while (raGroup.children.length > 0) {
+        const obj = raGroup.children[0];
+        raGroup.remove(obj);
+        if (obj.geometry) {
+          obj.geometry.dispose();
+        }
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((material) => material.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      }
+      while (raLabelTextures.length > 0) {
+        const texture = raLabelTextures.pop();
+        texture.dispose();
+      }
+    }
+
+    function buildRaVisualizer() {
+      clearRaVisualizer();
+
+      const radius = RA_BASE_RADIUS;
+      const segments = 256;
+      const ringPoints = [];
+      for (let i = 0; i <= segments; i += 1) {
+        const angle = (i / segments) * Math.PI * 2;
+        ringPoints.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
+      }
+
+      const ringGeometry = new THREE.BufferGeometry().setFromPoints(ringPoints);
+      const ringMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff });
+      raGroup.add(new THREE.LineLoop(ringGeometry, ringMaterial));
+
+      const majorTickMaterial = new THREE.LineBasicMaterial({ color: 0x66ffff });
+      const minorTickMaterial = new THREE.LineBasicMaterial({ color: 0x2d9da4 });
+
+      for (let h = 0; h < 24; h += 1) {
+        const angle = (h / 24) * Math.PI * 2;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const majorStart = new THREE.Vector3(cosA * (radius - 0.65), 0, sinA * (radius - 0.65));
+        const majorEnd = new THREE.Vector3(cosA * (radius + 0.65), 0, sinA * (radius + 0.65));
+        const tickGeometry = new THREE.BufferGeometry().setFromPoints([majorStart, majorEnd]);
+        raGroup.add(new THREE.Line(tickGeometry, majorTickMaterial.clone()));
+
+        const label = `${String(h)}h`;
+        const sprite = createTextSprite(label, h % 6 === 0 ? "#9fffff" : "#66ffff", h % 6 === 0 ? 18 : 15);
+        sprite.position.set(cosA * (radius + 2.6), 0, sinA * (radius + 2.6));
+        raGroup.add(sprite);
+      }
+
+      for (let m = 0; m < 96; m += 1) {
+        if (m % 4 === 0) {
+          continue;
+        }
+        const angle = (m / 96) * Math.PI * 2;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const start = new THREE.Vector3(cosA * (radius - 0.4), 0, sinA * (radius - 0.4));
+        const end = new THREE.Vector3(cosA * (radius + 0.4), 0, sinA * (radius + 0.4));
+        const tickGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+        raGroup.add(new THREE.Line(tickGeometry, minorTickMaterial.clone()));
+      }
+
+      const decPoints = [];
+      for (let i = 0; i <= segments; i += 1) {
+        const angle = (i / segments) * Math.PI * 2;
+        decPoints.push(new THREE.Vector3(0, Math.sin(angle) * radius, Math.cos(angle) * radius));
+      }
+      const decGeometry = new THREE.BufferGeometry().setFromPoints(decPoints);
+      const decMaterial = new THREE.LineBasicMaterial({ color: 0xffcc66 });
+      raGroup.add(new THREE.LineLoop(decGeometry, decMaterial));
+
+      const decTickMaterial = new THREE.LineBasicMaterial({ color: 0xffd98a });
+      for (let decDeg = -90; decDeg <= 90; decDeg += 10) {
+        const phi = THREE.MathUtils.degToRad(decDeg);
+        const y = Math.sin(phi) * radius;
+        const z = Math.cos(phi) * radius;
+
+        const tickStart = new THREE.Vector3(-0.35, y, z);
+        const tickEnd = new THREE.Vector3(0.35, y, z);
+        const tickGeometry = new THREE.BufferGeometry().setFromPoints([tickStart, tickEnd]);
+        raGroup.add(new THREE.Line(tickGeometry, decTickMaterial.clone()));
+
+        const labelText = `${decDeg}\u00b0`;
+        const labelColor = decDeg >= 0 ? "#ffd48a" : "#ffb366";
+        const sprite = createTextSprite(labelText, labelColor, 14);
+        const radial = new THREE.Vector3(0, y, z).normalize().multiplyScalar(radius + 1.6);
+        sprite.position.copy(radial);
+        sprite.position.x += 1.0;
+        raGroup.add(sprite);
+      }
+    }
 
 
     function parsePlanetsCsv(text) {
@@ -155,6 +291,8 @@
         parsed.push({
           name,
           type: "Unknown",
+          raDeg,
+          decDeg,
           distanceLy,
           position: new THREE.Vector3(
             distanceLy * cosDec * Math.cos(ra),
@@ -172,12 +310,43 @@
         statusEl.textContent = "No planet selected.";
         nameEl.textContent = "None";
         classEl.textContent = "-";
+        raEl.textContent = "-";
+        decEl.textContent = "-";
+        selectionDistanceEl.textContent = "-";
         return;
       }
 
       statusEl.textContent = `Selected ${planet.name}.`;
       nameEl.textContent = planet.name;
       classEl.textContent = planet.type || "Unknown";
+      raEl.textContent = formatRaHms(planet.raDeg);
+      decEl.textContent = formatDecDms(planet.decDeg);
+      selectionDistanceEl.textContent = `${planet.distanceLy.toFixed(2)} ly`;
+    }
+
+    function formatRaHms(raDeg) {
+      if (!Number.isFinite(raDeg)) {
+        return "-";
+      }
+      let totalSeconds = (raDeg / 15) * 3600;
+      totalSeconds = ((totalSeconds % 86400) + 86400) % 86400;
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+      return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+    }
+
+    function formatDecDms(decDeg) {
+      if (!Number.isFinite(decDeg)) {
+        return "-";
+      }
+      const sign = decDeg >= 0 ? "+" : "-";
+      const abs = Math.abs(decDeg);
+      const degrees = Math.floor(abs);
+      const minutesFull = (abs - degrees) * 60;
+      const minutes = Math.floor(minutesFull);
+      const seconds = Math.floor((minutesFull - minutes) * 60);
+      return `${sign}${String(degrees).padStart(2, "0")}° ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
     }
 
     function applyFilters() {
@@ -197,8 +366,14 @@
       }
 
       earthMesh.visible = 0 <= maxDistanceLy;
-      axesHelper.visible = showAxesEl.checked;
-      distanceEl.textContent = `${maxDistanceLy} ly max (${visibleCount}/${planets.length + 1} shown)`;
+      raGroup.visible = showAxesEl.checked;
+      const showRaLabels = showLabelsEl.value === "yes";
+      for (const obj of raGroup.children) {
+        if (obj.userData?.isOverlayLabel) {
+          obj.visible = showRaLabels;
+        }
+      }
+      distanceSummaryEl.textContent = `${maxDistanceLy} ly max (${visibleCount}/${planets.length + 1} shown)`;
 
       if (selectedPlanet && selectedPlanet !== earthMesh && !selectedPlanet.visible) {
         selectedPlanet.material.color.setHex(0xffffff);
@@ -220,7 +395,7 @@
       resetPlanetMeshes();
 
       const planetGeometry = new THREE.SphereGeometry(pointRadius, 12, 12);
-      const defaultMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+      const defaultMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
       for (const planet of parsedPlanets) {
         const mesh = new THREE.Mesh(planetGeometry.clone(), defaultMaterial.clone());
@@ -229,6 +404,8 @@
           name: planet.name,
           type: planet.type,
           typeSlug: "unknown",
+          raDeg: planet.raDeg,
+          decDeg: planet.decDeg,
           distanceLy: planet.distanceLy,
           isEarth: false
         };
@@ -255,7 +432,7 @@
 
         const maxDistanceLy = planets.reduce((max, planet) => Math.max(max, planet.distanceLy), 0);
         axisRange = Math.max(100, Math.ceil(maxDistanceLy / 50) * 50);
-        axesHelper.scale.setScalar(axisRange / 100);
+        buildRaVisualizer();
 
         distanceRangeEl.min = "1";
         distanceRangeEl.max = String(Math.ceil(maxDistanceLy));
@@ -271,7 +448,7 @@
         statusEl.textContent = `Could not load planets.csv: ${error.message}`;
         classEl.textContent = "Run local server";
         nameEl.textContent = "localhost:8000";
-        distanceEl.textContent = "python -m http.server 8000";
+        distanceSummaryEl.textContent = "python -m http.server 8000";
       }
     }
 
@@ -286,7 +463,7 @@
 
       if (!hits.length) {
         if (selectedPlanet) {
-          selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x2d7dff : 0xffffff);
+          selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x0000ff : 0xffffff);
         }
         selectedPlanet = null;
         updateStatusForSelection(null);
@@ -295,11 +472,11 @@
 
       const next = hits[0].object;
       if (selectedPlanet && selectedPlanet !== next) {
-        selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x2d7dff : 0xffffff);
+        selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x0000ff : 0xffffff);
       }
 
       selectedPlanet = next;
-      selectedPlanet.material.color.setHex(0xff2a2a);
+      selectedPlanet.material.color.setHex(0xff0000);
       updateStatusForSelection(selectedPlanet.userData);
     }
 
@@ -315,6 +492,19 @@
 
     function animate() {
       resizeRendererToDisplaySize();
+      const distanceToEarth = camera.position.distanceTo(earthMesh.position);
+      const frustumHeightAtEarth =
+        2 * distanceToEarth * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+      const worldPerPixel = frustumHeightAtEarth / Math.max(1, canvas.clientHeight);
+      const targetWorldRadius = worldPerPixel * RA_TARGET_SCREEN_RADIUS_PX;
+      const scale = Math.max(0.001, targetWorldRadius / RA_BASE_RADIUS);
+      raGroup.position.copy(earthMesh.position);
+      raGroup.scale.setScalar(scale);
+      raGroup.children.forEach((obj) => {
+        if (obj.type === "Sprite") {
+          obj.quaternion.copy(camera.quaternion);
+        }
+      });
       controls.update();
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
@@ -323,19 +513,17 @@
     distanceRangeEl.addEventListener("input", applyFilters);
     planetTypeEl.addEventListener("change", applyFilters);
     showAxesEl.addEventListener("change", applyFilters);
-    showLabelsEl.addEventListener("change", () => {
-      statusEl.textContent =
-        showLabelsEl.value === "yes"
-          ? "Labels are not yet implemented for this three.js view."
-          : "Labels hidden.";
-    });
+    showLabelsEl.addEventListener("change", applyFilters);
 
     renderer.domElement.addEventListener("click", pickPlanet);
 
-    showAxesEl.checked = false;
+    showAxesEl.checked = true;
     nameEl.textContent = "All planets";
     classEl.textContent = "From planets.csv";
-    distanceEl.textContent = "-";
+    raEl.textContent = "-";
+    decEl.textContent = "-";
+    selectionDistanceEl.textContent = "-";
+    distanceSummaryEl.textContent = "-";
     statusEl.textContent = "Loading planets.csv...";
 
     loadPlanets();
@@ -343,5 +531,3 @@
   </script>
 </body>
 </html>
-
-
