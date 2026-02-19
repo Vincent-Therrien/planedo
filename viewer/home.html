@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exoplanet Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>Exoplanet Position Viewer</h1>
+      <p class="subtitle">3D map of confirmed exoplanets</p>
+
+      <div class="controls">
+        <div class="control">
+          <label for="distance-range">Max distance (ly)</label>
+          <input id="distance-range" type="range" min="10" max="10000" value="2000" />
+        </div>
+
+        <div class="control">
+          <label for="planet-type">Planet type</label>
+          <select id="planet-type">
+            <option value="all">All</option>
+            <option value="gas-giant">Gas Giant</option>
+            <option value="neptune-like">Neptune-like</option>
+            <option value="super-earth">Super Earth</option>
+            <option value="terrestrial">Terrestrial</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="show-labels">Show labels</label>
+          <select id="show-labels">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+      </div>
+
+      <section class="planet-info" aria-live="polite">
+        <h2>Selection</h2>
+        <p id="selection-status">Click a sphere to see details.</p>
+        <p><strong>Name:</strong> <span id="planet-name">None</span></p>
+        <p><strong>Type:</strong> <span id="planet-class">-</span></p>
+        <p><strong>Distance:</strong> <span id="planet-distance">-</span></p>
+      </section>
+    </aside>
+
+    <main class="canvas-wrap">
+      <canvas id="scene-canvas" aria-label="3D exoplanet scene"></canvas>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("scene-canvas");
+    const ctx = canvas.getContext("2d");
+    const statusEl = document.getElementById("selection-status");
+    const nameEl = document.getElementById("planet-name");
+    const classEl = document.getElementById("planet-class");
+    const distanceEl = document.getElementById("planet-distance");
+
+    function drawSphere(x, y, radius, innerColor, outerColor) {
+      const gradient = ctx.createRadialGradient(
+        x - radius * 0.35,
+        y - radius * 0.35,
+        radius * 0.15,
+        x,
+        y,
+        radius
+      );
+      gradient.addColorStop(0, innerColor);
+      gradient.addColorStop(1, outerColor);
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.clearRect(0, 0, width, height);
+      drawSphere(width * 0.35, height * 0.5, Math.min(width, height) * 0.12, "#cbeeff", "#3a96c9");
+      drawSphere(width * 0.65, height * 0.5, Math.min(width, height) * 0.12, "#ffe1c3", "#cc7d32");
+    }
+
+    statusEl.textContent = "Two spheres rendered in canvas.";
+    nameEl.textContent = "Demo spheres";
+    classEl.textContent = "Placeholder";
+    distanceEl.textContent = "-";
+
+    window.addEventListener("resize", render);
+    render();
+  </script>
+</body>
+</html>

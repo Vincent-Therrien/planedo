@@ -1,0 +1,126 @@
+:root {
+  --bg: #0b1220;
+  --panel: #111c31;
+  --panel-border: #22334f;
+  --text: #e9f1ff;
+  --muted: #9fb3d9;
+  --accent: #4fc3f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  font-family: "Liberation", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  padding: 1.25rem;
+  background: linear-gradient(180deg, var(--panel), #0d1729);
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sidebar h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.controls {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.control {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.control label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.control input,
+.control select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: #0a1325;
+  color: var(--text);
+}
+
+.planet-info {
+  margin-top: auto;
+  padding: 0.9rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: rgba(10, 19, 37, 0.7);
+}
+
+.planet-info h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.planet-info p {
+  margin: 0.35rem 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.planet-info strong {
+  color: var(--text);
+}
+
+.canvas-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: radial-gradient(circle at 40% 25%, #142544 0%, #060b15 70%);
+}
+
+#scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--panel-border);
+  }
+}

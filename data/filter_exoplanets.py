@@ -3,8 +3,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-INPUT_FILE = Path(__file__).with_name("exoplanets.csv")
-OUTPUT_FILE = Path(__file__).with_name("filtered_exoplanets.csv")
+INPUT_FILE = Path(__file__).with_name("confirmed_exoplanets.csv")
+OUTPUT_FILE = Path(__file__).with_name("confirmed_exoplanets_filtered.csv")
 
 
 def _iter_data_lines(csv_path: Path):
@@ -20,10 +20,10 @@ def main() -> None:
     with OUTPUT_FILE.open("w", newline="", encoding="utf-8") as target:
         writer = csv.writer(target)
         writer.writerow(["system_name", "planet_name", "ra", "dec", "distance"])
+        planets = set()
         for row in reader:
-            print(row.get("soltype"))
-            system_name = (row.get("hostname") or "").strip()
             planet_name = (row.get("pl_name") or "").strip()
+            system_name = (row.get("hostname") or "").strip()
             ra = row.get("ra").strip()
             dec = row.get("dec").strip()
             distance = row.get("sy_dist").strip()
