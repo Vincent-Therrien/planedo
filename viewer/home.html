@@ -15,7 +15,7 @@
       <div class="controls">
         <div class="control">
           <label for="distance-range">Max distance (ly)</label>
-          <input id="distance-range" type="range" min="10" max="10000" value="2000" />
+          <input id="distance-range" type="range" min="2" max="100" step="0.1" value="8" />
         </div>
 
         <div class="control">
@@ -59,6 +59,69 @@
     const nameEl = document.getElementById("planet-name");
     const classEl = document.getElementById("planet-class");
     const distanceEl = document.getElementById("planet-distance");
+    const distanceRangeEl = document.getElementById("distance-range");
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+    let isPanMode = false;
+
+    const fov = Math.PI / 3;
+    const near = 0.1;
+    const target = { x: 0, y: 0, z: 0 };
+    let distance = 8;
+    let yaw = 0;
+    let pitch = 0.15;
+
+    const spheres = [
+      { x: -1.8, y: 0, z: 0, r: 0.9, inner: "#cbeeff", outer: "#3a96c9" },
+      { x: 1.8, y: 0, z: 0, r: 0.9, inner: "#ffe1c3", outer: "#cc7d32" }
+    ];
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function normalize(v) {
+      const len = Math.hypot(v.x, v.y, v.z) || 1;
+      return { x: v.x / len, y: v.y / len, z: v.z / len };
+    }
+
+    function cross(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+
+    function dot(a, b) {
+      return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+
+    function getCameraState() {
+      const cosPitch = Math.cos(pitch);
+      const cam = {
+        x: target.x + distance * cosPitch * Math.sin(yaw),
+        y: target.y + distance * Math.sin(pitch),
+        z: target.z + distance * cosPitch * Math.cos(yaw)
+      };
+
+      const forward = normalize({
+        x: target.x - cam.x,
+        y: target.y - cam.y,
+        z: target.z - cam.z
+      });
+
+      let right = cross(forward, { x: 0, y: 1, z: 0 });
+      if (Math.hypot(right.x, right.y, right.z) < 1e-6) {
+        right = { x: 1, y: 0, z: 0 };
+      } else {
+        right = normalize(right);
+      }
+
+      const up = normalize(cross(right, forward));
+      return { cam, forward, right, up };
+    }
 
     function drawSphere(x, y, radius, innerColor, outerColor) {
       const gradient = ctx.createRadialGradient(
@@ -78,6 +141,30 @@
       ctx.fill();
     }
 
+    function project(point, cameraState, width, height, focal) {
+      const rel = {
+        x: point.x - cameraState.cam.x,
+        y: point.y - cameraState.cam.y,
+        z: point.z - cameraState.cam.z
+      };
+
+      const cx = dot(rel, cameraState.right);
+      const cy = dot(rel, cameraState.up);
+      const cz = dot(rel, cameraState.forward);
+
+      if (cz <= near) {
+        return null;
+      }
+
+      const scale = focal / cz;
+      return {
+        x: width * 0.5 + cx * scale,
+        y: height * 0.5 - cy * scale,
+        scale,
+        depth: cz
+      };
+    }
+
     function render() {
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
@@ -85,16 +172,98 @@
       canvas.height = height;
 
       ctx.clearRect(0, 0, width, height);
-      drawSphere(width * 0.35, height * 0.5, Math.min(width, height) * 0.12, "#cbeeff", "#3a96c9");
-      drawSphere(width * 0.65, height * 0.5, Math.min(width, height) * 0.12, "#ffe1c3", "#cc7d32");
+      const focal = (height * 0.5) / Math.tan(fov * 0.5);
+      const cameraState = getCameraState();
+
+      const projected = spheres
+        .map((sphere) => {
+          const p = project(sphere, cameraState, width, height, focal);
+          if (!p) {
+            return null;
+          }
+          return { ...sphere, ...p, radius: sphere.r * p.scale };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.depth - a.depth);
+
+      projected.forEach((sphere) => {
+        drawSphere(sphere.x, sphere.y, sphere.radius, sphere.inner, sphere.outer);
+      });
     }
 
-    statusEl.textContent = "Two spheres rendered in canvas.";
+    function setDistance(nextDistance) {
+      distance = clamp(nextDistance, 2, 100);
+      distanceRangeEl.value = String(distance);
+      render();
+    }
+
+    canvas.addEventListener("mousedown", (event) => {
+      if (event.button !== 0 && event.button !== 1) {
+        return;
+      }
+      isDragging = true;
+      isPanMode = event.shiftKey || event.button === 1;
+      if (event.button === 1) {
+        event.preventDefault();
+      }
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+      canvas.style.cursor = "grabbing";
+    });
+
+    window.addEventListener("mousemove", (event) => {
+      if (!isDragging) {
+        return;
+      }
+      const dx = event.clientX - lastMouseX;
+      const dy = event.clientY - lastMouseY;
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+
+      if (isPanMode) {
+        const cameraState = getCameraState();
+        const worldPerPixel = (2 * distance * Math.tan(fov * 0.5)) / canvas.clientHeight;
+        target.x -= cameraState.right.x * dx * worldPerPixel;
+        target.y -= cameraState.right.y * dx * worldPerPixel;
+        target.z -= cameraState.right.z * dx * worldPerPixel;
+        target.x += cameraState.up.x * dy * worldPerPixel;
+        target.y += cameraState.up.y * dy * worldPerPixel;
+        target.z += cameraState.up.z * dy * worldPerPixel;
+      } else {
+        yaw -= dx * 0.005;
+        pitch = clamp(pitch + dy * 0.005, -1.45, 1.45);
+      }
+
+      render();
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+      canvas.style.cursor = "grab";
+    });
+
+    canvas.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+        const factor = event.deltaY > 0 ? 1.08 : 0.92;
+        setDistance(distance * factor);
+      },
+      { passive: false }
+    );
+
+    distanceRangeEl.addEventListener("input", () => {
+      setDistance(Number(distanceRangeEl.value));
+    });
+
+    canvas.style.cursor = "grab";
+    statusEl.textContent = "Drag to orbit. Hold Shift and drag to move camera.";
     nameEl.textContent = "Demo spheres";
     classEl.textContent = "Placeholder";
     distanceEl.textContent = "-";
 
     window.addEventListener("resize", render);
+    distanceRangeEl.value = String(distance);
     render();
   </script>
 </body>

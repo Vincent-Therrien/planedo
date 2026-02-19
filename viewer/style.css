@@ -73,7 +73,7 @@ body {
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--panel-border);
   border-radius: 8px;
-  background: #0a1325;
+  background: black;
   color: var(--text);
 }
 
@@ -104,7 +104,7 @@ body {
   position: relative;
   min-width: 0;
   min-height: 0;
-  background: radial-gradient(circle at 40% 25%, #142544 0%, #060b15 70%);
+  background: black;
 }
 
 #scene-canvas {
