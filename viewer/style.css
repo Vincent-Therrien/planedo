@@ -36,6 +36,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 .sidebar h1 {
@@ -68,7 +73,8 @@ body {
 }
 
 .control input,
-.control select {
+.control select,
+.control button {
   width: 100%;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--panel-border);
@@ -91,6 +97,54 @@ body {
   background: transparent;
 }
 
+.legend-info {
+  padding: 0.9rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: rgba(10, 19, 37, 0.45);
+}
+
+.legend-info h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.legend-info p {
+  margin: 0.35rem 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.legend-info strong {
+  color: var(--text);
+}
+
+.legend-swatch {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex: 0 0 auto;
+}
+
+.legend-earth {
+  background: #0000ff;
+}
+
+.legend-inside {
+  background: #8fb8ff;
+}
+
+.legend-outside {
+  background: #ffffff;
+}
+
+.legend-selected {
+  background: #ff0000;
+}
 .planet-info {
   margin-top: auto;
   padding: 0.9rem;
@@ -136,5 +190,10 @@ body {
   .sidebar {
     border-right: 0;
     border-bottom: 1px solid var(--panel-border);
+    height: auto;
+    max-height: none;
+    overflow-y: visible;
   }
 }
+
+

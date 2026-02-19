@@ -42,7 +42,25 @@
           <label for="show-axes">Show Equatorial Grid (RA/Dec)</label>
           <input id="show-axes" type="checkbox" />
         </div>
+
+        <div class="control axis-toggle">
+          <label for="show-gc-arrow">Show Galactic Center Arrow</label>
+          <input id="show-gc-arrow" type="checkbox" />
+        </div>
+
+        <div class="control">
+          <button id="reset-view" type="button">Reset View to Earth</button>
+        </div>
       </div>
+
+      <section class="legend-info" aria-live="polite">
+        <h2>Legend</h2>
+        <p><span class="legend-swatch legend-earth"></span> Earth (Deep blue)</p>
+        <p><span class="legend-swatch legend-inside"></span> Planet inside equatorial grid</p>
+        <p><span class="legend-swatch legend-outside"></span> Planet outside equatorial grid</p>
+        <p><span class="legend-swatch legend-selected"></span> Selected planet</p>
+        <p><strong>Grid radius:</strong> <span id="grid-radius-ly">-</span></p>
+      </section>
 
       <section class="planet-info" aria-live="polite">
         <h2>Selection</h2>
@@ -85,6 +103,9 @@
     const planetTypeEl = document.getElementById("planet-type");
     const showLabelsEl = document.getElementById("show-labels");
     const showAxesEl = document.getElementById("show-axes");
+    const showGalacticArrowEl = document.getElementById("show-gc-arrow");
+    const gridRadiusEl = document.getElementById("grid-radius-ly");
+    const resetViewEl = document.getElementById("reset-view");
 
     const PARSEC_TO_LIGHTYEAR = 3.26156;
     const pointRadius = 0.75;
@@ -93,10 +114,25 @@
     const raLabelTextures = [];
     const RA_BASE_RADIUS = 20;
     const RA_TARGET_SCREEN_RADIUS_PX = 250;
+    const MAX_ZOOM_OUT_GRID_RADIUS_LY = 27000;
+    const PLANET_MIN_SCREEN_RADIUS_PX = 1;
+    const PLANET_SCREEN_RADIUS_PX = 3;
+    const COLOR_EARTH = 0x0000ff;
+    const COLOR_PLANET_INSIDE_GRID = 0x8fb8ff;
+    const COLOR_PLANET_OUTSIDE_GRID = 0xffffff;
+    const COLOR_SELECTED = 0xff0000;
+    const COLOR_GALACTIC_CENTER = 0xffa500;
+    const GALACTIC_CENTER_RA_DEG = (17 + (45 / 60) + (40.04 / 3600)) * 15;
+    const GALACTIC_CENTER_DEC_DEG = -29 - (28.1 / 3600);
+    const GALACTIC_CENTER_DISTANCE_LY = 27000;
 
     let axisRange = 100;
     let planets = [];
     let selectedPlanet = null;
+    let pointerIsDown = false;
+    let pointerMoved = false;
+    let pointerDownX = 0;
+    let pointerDownY = 0;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
@@ -120,7 +156,7 @@
     scene.add(pointLight);
 
     const earthGeometry = new THREE.SphereGeometry(pointRadius * 1.4, 16, 16);
-    const earthMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    const earthMaterial = new THREE.MeshBasicMaterial({ color: COLOR_EARTH });
     const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
     earthMesh.userData = {
       name: "Earth",
@@ -129,6 +165,43 @@
       isEarth: true
     };
     scene.add(earthMesh);
+
+    const gcRa = THREE.MathUtils.degToRad(GALACTIC_CENTER_RA_DEG);
+    const gcDec = THREE.MathUtils.degToRad(GALACTIC_CENTER_DEC_DEG);
+    const gcCosDec = Math.cos(gcDec);
+    const galacticCenterDirection = new THREE.Vector3(
+      gcCosDec * Math.cos(gcRa),
+      Math.sin(gcDec),
+      -gcCosDec * Math.sin(gcRa)
+    ).normalize();
+    const galacticCenterMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(pointRadius * 1.8, 16, 16),
+      new THREE.MeshBasicMaterial({ color: COLOR_GALACTIC_CENTER })
+    );
+    galacticCenterMesh.position.copy(
+      galacticCenterDirection.clone().multiplyScalar(GALACTIC_CENTER_DISTANCE_LY)
+    );
+    galacticCenterMesh.userData = {
+      name: "Sagittarius A*",
+      type: "Galactic Center",
+      raDeg: GALACTIC_CENTER_RA_DEG,
+      decDeg: GALACTIC_CENTER_DEC_DEG,
+      distanceLy: GALACTIC_CENTER_DISTANCE_LY,
+      isEarth: false,
+      isGalacticCenter: true
+    };
+    scene.add(galacticCenterMesh);
+
+    const galacticCenterArrow = new THREE.ArrowHelper(
+      galacticCenterDirection,
+      earthMesh.position.clone(),
+      40,
+      0xffaa00,
+      6,
+      3
+    );
+    galacticCenterArrow.visible = false;
+    scene.add(galacticCenterArrow);
 
     const planetGroup = new THREE.Group();
     scene.add(planetGroup);
@@ -207,7 +280,7 @@
       const minorTickMaterial = new THREE.LineBasicMaterial({ color: 0x2d9da4 });
 
       for (let h = 0; h < 24; h += 1) {
-        const angle = (h / 24) * Math.PI * 2;
+        const angle = -(h / 24) * Math.PI * 2;
         const cosA = Math.cos(angle);
         const sinA = Math.sin(angle);
         const majorStart = new THREE.Vector3(cosA * (radius - 0.65), 0, sinA * (radius - 0.65));
@@ -225,7 +298,7 @@
         if (m % 4 === 0) {
           continue;
         }
-        const angle = (m / 96) * Math.PI * 2;
+        const angle = -(m / 96) * Math.PI * 2;
         const cosA = Math.cos(angle);
         const sinA = Math.sin(angle);
         const start = new THREE.Vector3(cosA * (radius - 0.4), 0, sinA * (radius - 0.4));
@@ -234,14 +307,18 @@
         raGroup.add(new THREE.Line(tickGeometry, minorTickMaterial.clone()));
       }
 
+      const decGroup = new THREE.Group();
+      decGroup.rotation.y = Math.PI / 2;
+      raGroup.add(decGroup);
+
       const decPoints = [];
       for (let i = 0; i <= segments; i += 1) {
         const angle = (i / segments) * Math.PI * 2;
         decPoints.push(new THREE.Vector3(0, Math.sin(angle) * radius, Math.cos(angle) * radius));
       }
       const decGeometry = new THREE.BufferGeometry().setFromPoints(decPoints);
-      const decMaterial = new THREE.LineBasicMaterial({ color: 0xffcc66 });
-      raGroup.add(new THREE.LineLoop(decGeometry, decMaterial));
+      const decMaterial = new THREE.LineBasicMaterial({ color: 0x40e0d0 });
+      decGroup.add(new THREE.LineLoop(decGeometry, decMaterial));
 
       const decTickMaterial = new THREE.LineBasicMaterial({ color: 0xffd98a });
       for (let decDeg = -90; decDeg <= 90; decDeg += 10) {
@@ -252,15 +329,15 @@
         const tickStart = new THREE.Vector3(-0.35, y, z);
         const tickEnd = new THREE.Vector3(0.35, y, z);
         const tickGeometry = new THREE.BufferGeometry().setFromPoints([tickStart, tickEnd]);
-        raGroup.add(new THREE.Line(tickGeometry, decTickMaterial.clone()));
+        decGroup.add(new THREE.Line(tickGeometry, decTickMaterial.clone()));
 
         const labelText = `${decDeg}\u00b0`;
-        const labelColor = decDeg >= 0 ? "#ffd48a" : "#ffb366";
+        const labelColor = "#40e0d0";
         const sprite = createTextSprite(labelText, labelColor, 14);
         const radial = new THREE.Vector3(0, y, z).normalize().multiplyScalar(radius + 1.6);
         sprite.position.copy(radial);
         sprite.position.x += 1.0;
-        raGroup.add(sprite);
+        decGroup.add(sprite);
       }
     }
 
@@ -297,7 +374,7 @@
           position: new THREE.Vector3(
             distanceLy * cosDec * Math.cos(ra),
             distanceLy * Math.sin(dec),
-            distanceLy * cosDec * Math.sin(ra)
+            -distanceLy * cosDec * Math.sin(ra)
           )
         });
       }
@@ -366,7 +443,9 @@
       }
 
       earthMesh.visible = 0 <= maxDistanceLy;
+      galacticCenterMesh.visible = true;
       raGroup.visible = showAxesEl.checked;
+      galacticCenterArrow.visible = showGalacticArrowEl.checked;
       const showRaLabels = showLabelsEl.value === "yes";
       for (const obj of raGroup.children) {
         if (obj.userData?.isOverlayLabel) {
@@ -376,10 +455,10 @@
       distanceSummaryEl.textContent = `${maxDistanceLy} ly max (${visibleCount}/${planets.length + 1} shown)`;
 
       if (selectedPlanet && selectedPlanet !== earthMesh && !selectedPlanet.visible) {
-        selectedPlanet.material.color.setHex(0xffffff);
         selectedPlanet = null;
         updateStatusForSelection(null);
       }
+      updatePlanetBaseColors(getCurrentGridWorldRadius());
     }
 
     function resetPlanetMeshes() {
@@ -439,7 +518,7 @@
         distanceRangeEl.step = "1";
         distanceRangeEl.value = String(Math.max(1, Math.min(100, Math.ceil(maxDistanceLy))));
 
-        controls.maxDistance = Math.max(250, axisRange * 8);
+        updateZoomLimits();
         controls.update();
 
         statusEl.textContent = `Loaded ${planets.length + 1} planets. Drag to orbit, right-drag to pan, scroll to zoom.`;
@@ -458,26 +537,21 @@
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       const candidates = [earthMesh, ...planetGroup.children.filter((mesh) => mesh.visible)];
+      candidates.push(galacticCenterMesh);
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObjects(candidates, false);
 
       if (!hits.length) {
-        if (selectedPlanet) {
-          selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x0000ff : 0xffffff);
-        }
         selectedPlanet = null;
         updateStatusForSelection(null);
+        updatePlanetBaseColors(getCurrentGridWorldRadius());
         return;
       }
 
       const next = hits[0].object;
-      if (selectedPlanet && selectedPlanet !== next) {
-        selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x0000ff : 0xffffff);
-      }
-
       selectedPlanet = next;
-      selectedPlanet.material.color.setHex(0xff0000);
       updateStatusForSelection(selectedPlanet.userData);
+      updatePlanetBaseColors(getCurrentGridWorldRadius());
     }
 
     function resizeRendererToDisplaySize() {
@@ -487,19 +561,80 @@
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        updateZoomLimits();
+      }
+    }
+
+    function updateZoomLimits() {
+      const viewportHeight = Math.max(1, canvas.clientHeight);
+      const fovRad = THREE.MathUtils.degToRad(camera.fov);
+      const distanceForMaxGridRadius =
+        (MAX_ZOOM_OUT_GRID_RADIUS_LY * viewportHeight) /
+        (2 * Math.tan(fovRad * 0.5) * RA_TARGET_SCREEN_RADIUS_PX);
+
+      controls.maxDistance = Math.max(250, distanceForMaxGridRadius);
+      camera.far = Math.max(20000, controls.maxDistance * 2);
+      camera.updateProjectionMatrix();
+    }
+
+    function updatePlanetScreenSizes() {
+      const viewportHeight = Math.max(1, canvas.clientHeight);
+      const fovRad = THREE.MathUtils.degToRad(camera.fov);
+      const meshes = [earthMesh, galacticCenterMesh, ...planetGroup.children];
+
+      for (const mesh of meshes) {
+        const distanceToCamera = camera.position.distanceTo(mesh.position);
+        const frustumHeightAtMesh = 2 * distanceToCamera * Math.tan(fovRad * 0.5);
+        const worldPerPixel = frustumHeightAtMesh / viewportHeight;
+        const minWorldRadius = Math.max(0.0001, worldPerPixel * PLANET_MIN_SCREEN_RADIUS_PX);
+        const maxWorldRadius = Math.max(minWorldRadius, worldPerPixel * PLANET_SCREEN_RADIUS_PX);
+        const baseRadius = mesh.geometry?.parameters?.radius || pointRadius;
+        const clampedWorldRadius = Math.min(maxWorldRadius, Math.max(minWorldRadius, baseRadius));
+        mesh.scale.setScalar(clampedWorldRadius / baseRadius);
+      }
+    }
+
+    function getCurrentGridWorldRadius() {
+      const distanceToEarth = camera.position.distanceTo(earthMesh.position);
+      const frustumHeightAtEarth =
+        2 * distanceToEarth * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+      const worldPerPixel = frustumHeightAtEarth / Math.max(1, canvas.clientHeight);
+      return worldPerPixel * RA_TARGET_SCREEN_RADIUS_PX;
+    }
+
+    function updatePlanetBaseColors(gridWorldRadius) {
+      earthMesh.material.color.setHex(COLOR_EARTH);
+      galacticCenterMesh.material.color.setHex(
+        selectedPlanet === galacticCenterMesh ? COLOR_SELECTED : COLOR_GALACTIC_CENTER
+      );
+
+      for (const mesh of planetGroup.children) {
+        if (mesh === selectedPlanet) {
+          mesh.material.color.setHex(COLOR_SELECTED);
+          continue;
+        }
+
+        const distanceFromEarth = mesh.position.distanceTo(earthMesh.position);
+        const insideGrid = distanceFromEarth <= gridWorldRadius;
+        mesh.material.color.setHex(insideGrid ? COLOR_PLANET_INSIDE_GRID : COLOR_PLANET_OUTSIDE_GRID);
       }
     }
 
     function animate() {
       resizeRendererToDisplaySize();
-      const distanceToEarth = camera.position.distanceTo(earthMesh.position);
-      const frustumHeightAtEarth =
-        2 * distanceToEarth * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
-      const worldPerPixel = frustumHeightAtEarth / Math.max(1, canvas.clientHeight);
-      const targetWorldRadius = worldPerPixel * RA_TARGET_SCREEN_RADIUS_PX;
+      updatePlanetScreenSizes();
+      const targetWorldRadius = getCurrentGridWorldRadius();
+      gridRadiusEl.textContent = `${targetWorldRadius.toFixed(2)} ly`;
       const scale = Math.max(0.001, targetWorldRadius / RA_BASE_RADIUS);
       raGroup.position.copy(earthMesh.position);
       raGroup.scale.setScalar(scale);
+      galacticCenterArrow.position.copy(earthMesh.position);
+      galacticCenterArrow.setLength(
+        Math.max(12, targetWorldRadius * 0.85),
+        Math.max(2.5, targetWorldRadius * 0.1),
+        Math.max(1.2, targetWorldRadius * 0.05)
+      );
+      updatePlanetBaseColors(targetWorldRadius);
       raGroup.children.forEach((obj) => {
         if (obj.type === "Sprite") {
           obj.quaternion.copy(camera.quaternion);
@@ -510,14 +645,51 @@
       requestAnimationFrame(animate);
     }
 
+    function resetViewToEarth() {
+      controls.target.copy(earthMesh.position);
+      camera.position.set(0, 120, 250);
+      controls.update();
+    }
+
     distanceRangeEl.addEventListener("input", applyFilters);
     planetTypeEl.addEventListener("change", applyFilters);
     showAxesEl.addEventListener("change", applyFilters);
+    showGalacticArrowEl.addEventListener("change", applyFilters);
     showLabelsEl.addEventListener("change", applyFilters);
+    resetViewEl.addEventListener("click", resetViewToEarth);
 
-    renderer.domElement.addEventListener("click", pickPlanet);
+    renderer.domElement.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      pointerIsDown = true;
+      pointerMoved = false;
+      pointerDownX = event.clientX;
+      pointerDownY = event.clientY;
+    });
+    window.addEventListener("mousemove", (event) => {
+      if (!pointerIsDown || pointerMoved) {
+        return;
+      }
+      const dx = event.clientX - pointerDownX;
+      const dy = event.clientY - pointerDownY;
+      if ((dx * dx) + (dy * dy) > 16) {
+        pointerMoved = true;
+      }
+    });
+    window.addEventListener("mouseup", () => {
+      pointerIsDown = false;
+    });
+    renderer.domElement.addEventListener("click", (event) => {
+      if (pointerMoved) {
+        pointerMoved = false;
+        return;
+      }
+      pickPlanet(event);
+    });
 
     showAxesEl.checked = true;
+    showGalacticArrowEl.checked = false;
     nameEl.textContent = "All planets";
     classEl.textContent = "From planets.csv";
     raEl.textContent = "-";
