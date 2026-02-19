@@ -57,195 +57,77 @@
     </main>
   </div>
 
-  <script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
     const canvas = document.getElementById("scene-canvas");
-    const ctx = canvas.getContext("2d");
     const statusEl = document.getElementById("selection-status");
     const nameEl = document.getElementById("planet-name");
     const classEl = document.getElementById("planet-class");
     const distanceEl = document.getElementById("planet-distance");
     const distanceRangeEl = document.getElementById("distance-range");
+    const planetTypeEl = document.getElementById("planet-type");
+    const showLabelsEl = document.getElementById("show-labels");
     const showAxesEl = document.getElementById("show-axes");
+
     const PARSEC_TO_LIGHTYEAR = 3.26156;
+    const pointRadius = 0.75;
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
 
-    let isDragging = false;
-    let lastMouseX = 0;
-    let lastMouseY = 0;
-    let isPanMode = false;
-    let dragDistancePx = 0;
-
-    const fov = Math.PI / 3;
-    const near = 0.1;
-    const target = { x: 0, y: 0, z: 0 };
-    let cameraDistance = 250;
-    let yaw = 0;
-    let pitch = 0.15;
     let axisRange = 100;
     let planets = [];
-    let projectedPlanetsForPicking = [];
-    let selectedPlanetName = null;
+    let selectedPlanet = null;
 
-    const tickSize = 1.1;
-    const axisStep = 50;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
 
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
+    const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 10000);
+    camera.position.set(0, 120, 250);
 
-    function normalize(v) {
-      const len = Math.hypot(v.x, v.y, v.z) || 1;
-      return { x: v.x / len, y: v.y / len, z: v.z / len };
-    }
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    function cross(a, b) {
-      return {
-        x: a.y * b.z - a.z * b.y,
-        y: a.z * b.x - a.x * b.z,
-        z: a.x * b.y - a.y * b.x
-      };
-    }
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 0, 0);
 
-    function dot(a, b) {
-      return a.x * b.x + a.y * b.y + a.z * b.z;
-    }
+    const axesHelper = new THREE.AxesHelper(100);
+    axesHelper.visible = false;
+    scene.add(axesHelper);
 
-    function getCameraState() {
-      const cosPitch = Math.cos(pitch);
-      const cam = {
-        x: target.x + cameraDistance * cosPitch * Math.sin(yaw),
-        y: target.y + cameraDistance * Math.sin(pitch),
-        z: target.z + cameraDistance * cosPitch * Math.cos(yaw)
-      };
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
 
-      const forward = normalize({
-        x: target.x - cam.x,
-        y: target.y - cam.y,
-        z: target.z - cam.z
-      });
+    const pointLight = new THREE.PointLight(0xffffff, 0.9);
+    pointLight.position.set(120, 120, 120);
+    scene.add(pointLight);
 
-      let right = cross(forward, { x: 0, y: 1, z: 0 });
-      if (Math.hypot(right.x, right.y, right.z) < 1e-6) {
-        right = { x: 1, y: 0, z: 0 };
-      } else {
-        right = normalize(right);
-      }
+    const earthGeometry = new THREE.SphereGeometry(pointRadius * 1.4, 16, 16);
+    const earthMaterial = new THREE.MeshStandardMaterial({ color: 0x2d7dff });
+    const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+    earthMesh.userData = {
+      name: "Earth",
+      type: "Reference",
+      distanceLy: 0,
+      isEarth: true
+    };
+    scene.add(earthMesh);
 
-      const up = normalize(cross(right, forward));
-      return { cam, forward, right, up };
-    }
+    const planetGroup = new THREE.Group();
+    scene.add(planetGroup);
 
-    function drawDot(x, y, radius, color) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    function project(point, cameraState, width, height, focal) {
-      const rel = {
-        x: point.x - cameraState.cam.x,
-        y: point.y - cameraState.cam.y,
-        z: point.z - cameraState.cam.z
-      };
-
-      const cx = dot(rel, cameraState.right);
-      const cy = dot(rel, cameraState.up);
-      const cz = dot(rel, cameraState.forward);
-
-      if (cz <= near) {
-        return null;
-      }
-
-      const scale = focal / cz;
-      return {
-        x: width * 0.5 + cx * scale,
-        y: height * 0.5 - cy * scale,
-        scale,
-        depth: cz
-      };
-    }
-
-    function draw3DLine(a, b, cameraState, width, height, focal, lineWidth) {
-      const pa = project(a, cameraState, width, height, focal);
-      const pb = project(b, cameraState, width, height, focal);
-      if (!pa || !pb) {
-        return;
-      }
-
-      ctx.lineWidth = lineWidth;
-      ctx.beginPath();
-      ctx.moveTo(pa.x, pa.y);
-      ctx.lineTo(pb.x, pb.y);
-      ctx.stroke();
-    }
-
-    function drawAxes(cameraState, width, height, focal) {
-      ctx.strokeStyle = "#ffffff";
-
-      draw3DLine(
-        { x: -axisRange, y: 0, z: 0 },
-        { x: axisRange, y: 0, z: 0 },
-        cameraState,
-        width,
-        height,
-        focal,
-        1
-      );
-      draw3DLine(
-        { x: 0, y: -axisRange, z: 0 },
-        { x: 0, y: axisRange, z: 0 },
-        cameraState,
-        width,
-        height,
-        focal,
-        1
-      );
-      draw3DLine(
-        { x: 0, y: 0, z: -axisRange },
-        { x: 0, y: 0, z: axisRange },
-        cameraState,
-        width,
-        height,
-        focal,
-        1
-      );
-
-      ctx.globalAlpha = 0.8;
-      for (let i = -axisRange; i <= axisRange; i += axisStep) {
-        if (i === 0) {
-          continue;
-        }
-
-        draw3DLine(
-          { x: i, y: -tickSize, z: 0 },
-          { x: i, y: tickSize, z: 0 },
-          cameraState,
-          width,
-          height,
-          focal,
-          1
-        );
-        draw3DLine(
-          { x: -tickSize, y: i, z: 0 },
-          { x: tickSize, y: i, z: 0 },
-          cameraState,
-          width,
-          height,
-          focal,
-          1
-        );
-        draw3DLine(
-          { x: 0, y: -tickSize, z: i },
-          { x: 0, y: tickSize, z: i },
-          cameraState,
-          width,
-          height,
-          focal,
-          1
-        );
-      }
-      ctx.globalAlpha = 1;
-    }
 
     function parsePlanetsCsv(text) {
       const lines = text.trim().split(/\r?\n/);
@@ -272,14 +154,86 @@
 
         parsed.push({
           name,
+          type: "Unknown",
           distanceLy,
-          x: distanceLy * cosDec * Math.cos(ra),
-          y: distanceLy * Math.sin(dec),
-          z: distanceLy * cosDec * Math.sin(ra)
+          position: new THREE.Vector3(
+            distanceLy * cosDec * Math.cos(ra),
+            distanceLy * Math.sin(dec),
+            distanceLy * cosDec * Math.sin(ra)
+          )
         });
       }
 
       return parsed;
+    }
+
+    function updateStatusForSelection(planet) {
+      if (!planet) {
+        statusEl.textContent = "No planet selected.";
+        nameEl.textContent = "None";
+        classEl.textContent = "-";
+        return;
+      }
+
+      statusEl.textContent = `Selected ${planet.name}.`;
+      nameEl.textContent = planet.name;
+      classEl.textContent = planet.type || "Unknown";
+    }
+
+    function applyFilters() {
+      const maxDistanceLy = Number(distanceRangeEl.value);
+      const typeFilter = planetTypeEl.value;
+
+      let visibleCount = 1;
+
+      for (const mesh of planetGroup.children) {
+        const planet = mesh.userData;
+        const typeMatch = typeFilter === "all" || planet.typeSlug === typeFilter;
+        const visible = planet.distanceLy <= maxDistanceLy && typeMatch;
+        mesh.visible = visible;
+        if (visible) {
+          visibleCount += 1;
+        }
+      }
+
+      earthMesh.visible = 0 <= maxDistanceLy;
+      axesHelper.visible = showAxesEl.checked;
+      distanceEl.textContent = `${maxDistanceLy} ly max (${visibleCount}/${planets.length + 1} shown)`;
+
+      if (selectedPlanet && selectedPlanet !== earthMesh && !selectedPlanet.visible) {
+        selectedPlanet.material.color.setHex(0xffffff);
+        selectedPlanet = null;
+        updateStatusForSelection(null);
+      }
+    }
+
+    function resetPlanetMeshes() {
+      while (planetGroup.children.length > 0) {
+        const mesh = planetGroup.children[0];
+        planetGroup.remove(mesh);
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+      }
+    }
+
+    function buildPlanetMeshes(parsedPlanets) {
+      resetPlanetMeshes();
+
+      const planetGeometry = new THREE.SphereGeometry(pointRadius, 12, 12);
+      const defaultMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+      for (const planet of parsedPlanets) {
+        const mesh = new THREE.Mesh(planetGeometry.clone(), defaultMaterial.clone());
+        mesh.position.copy(planet.position);
+        mesh.userData = {
+          name: planet.name,
+          type: planet.type,
+          typeSlug: "unknown",
+          distanceLy: planet.distanceLy,
+          isEarth: false
+        };
+        planetGroup.add(mesh);
+      }
     }
 
     async function loadPlanets() {
@@ -296,24 +250,23 @@
         }
 
         const csvText = await response.text();
-        planets = [
-          { name: "Earth", distanceLy: 0, x: 0, y: 0, z: 0, isEarth: true },
-          ...parsePlanetsCsv(csvText).map((planet) => ({ ...planet, isEarth: false }))
-        ];
-        const maxDistanceLy = planets.reduce(
-          (max, planet) => Math.max(max, planet.distanceLy),
-          0
-        );
-        axisRange = Math.max(100, Math.ceil(maxDistanceLy / axisStep) * axisStep);
+        planets = parsePlanetsCsv(csvText);
+        buildPlanetMeshes(planets);
+
+        const maxDistanceLy = planets.reduce((max, planet) => Math.max(max, planet.distanceLy), 0);
+        axisRange = Math.max(100, Math.ceil(maxDistanceLy / 50) * 50);
+        axesHelper.scale.setScalar(axisRange / 100);
 
         distanceRangeEl.min = "1";
         distanceRangeEl.max = String(Math.ceil(maxDistanceLy));
         distanceRangeEl.step = "1";
         distanceRangeEl.value = String(Math.max(1, Math.min(100, Math.ceil(maxDistanceLy))));
 
-        statusEl.textContent = `Loaded ${planets.length} planets. Drag to orbit. Shift+drag to pan.`;
-        distanceEl.textContent = `${distanceRangeEl.value} ly max`;
-        render();
+        controls.maxDistance = Math.max(250, axisRange * 8);
+        controls.update();
+
+        statusEl.textContent = `Loaded ${planets.length + 1} planets. Drag to orbit, right-drag to pan, scroll to zoom.`;
+        applyFilters();
       } catch (error) {
         statusEl.textContent = `Could not load planets.csv: ${error.message}`;
         classEl.textContent = "Run local server";
@@ -322,180 +275,73 @@
       }
     }
 
-    function render() {
+    function pickPlanet(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      const candidates = [earthMesh, ...planetGroup.children.filter((mesh) => mesh.visible)];
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(candidates, false);
+
+      if (!hits.length) {
+        if (selectedPlanet) {
+          selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x2d7dff : 0xffffff);
+        }
+        selectedPlanet = null;
+        updateStatusForSelection(null);
+        return;
+      }
+
+      const next = hits[0].object;
+      if (selectedPlanet && selectedPlanet !== next) {
+        selectedPlanet.material.color.setHex(selectedPlanet.userData.isEarth ? 0x2d7dff : 0xffffff);
+      }
+
+      selectedPlanet = next;
+      selectedPlanet.material.color.setHex(0xff2a2a);
+      updateStatusForSelection(selectedPlanet.userData);
+    }
+
+    function resizeRendererToDisplaySize() {
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      canvas.width = width;
-      canvas.height = height;
-
-      ctx.clearRect(0, 0, width, height);
-      const focal = (height * 0.5) / Math.tan(fov * 0.5);
-      const cameraState = getCameraState();
-      if (showAxesEl.checked) {
-        drawAxes(cameraState, width, height, focal);
+      if (canvas.width !== width || canvas.height !== height) {
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
       }
-
-      const maxDistanceLy = Number(distanceRangeEl.value);
-      const projected = planets
-        .filter((planet) => planet.distanceLy <= maxDistanceLy)
-        .map((planet) => {
-          const p = project(planet, cameraState, width, height, focal);
-          if (!p) {
-            return null;
-          }
-          return { ...planet, ...p, radius: clamp(0.4 * p.scale, 1.2, 4.5) };
-        })
-        .filter(Boolean)
-        .sort((a, b) => b.depth - a.depth);
-
-      projectedPlanetsForPicking = projected.map((planet) => ({
-        name: planet.name,
-        x: planet.x,
-        y: planet.y,
-        radius: planet.radius,
-        depth: planet.depth,
-        distanceLy: planet.distanceLy
-      }));
-
-      projected.forEach((planet) => {
-        if (planet.isEarth) {
-          return;
-        }
-        let color = "#ffffff";
-        if (selectedPlanetName === planet.name) {
-          color = "#ff2a2a";
-        }
-        drawDot(planet.x, planet.y, planet.radius, color);
-      });
-
-      const earth = projected.find((planet) => planet.isEarth);
-      if (earth) {
-        const earthColor = selectedPlanetName === earth.name ? "#ff2a2a" : "#2d7dff";
-        drawDot(earth.x, earth.y, Math.max(earth.radius, 4), earthColor);
-      }
-      distanceEl.textContent = `${maxDistanceLy} ly max (${projected.length}/${planets.length} shown)`;
     }
 
-    function selectPlanetAt(screenX, screenY) {
-      let selected = null;
-      let bestDepth = Infinity;
-      let bestDistSq = Infinity;
-
-      for (const planet of projectedPlanetsForPicking) {
-        const dx = screenX - planet.x;
-        const dy = screenY - planet.y;
-        const distSq = dx * dx + dy * dy;
-        const pickRadius = Math.max(6, planet.radius + 3);
-        if (distSq > pickRadius * pickRadius) {
-          continue;
-        }
-
-        if (planet.depth < bestDepth || (planet.depth === bestDepth && distSq < bestDistSq)) {
-          selected = planet;
-          bestDepth = planet.depth;
-          bestDistSq = distSq;
-        }
-      }
-
-      if (!selected) {
-        selectedPlanetName = null;
-        statusEl.textContent = "No planet selected.";
-        nameEl.textContent = "None";
-        render();
-        return;
-      }
-
-      selectedPlanetName = selected.name;
-      statusEl.textContent = `Selected ${selected.name}.`;
-      nameEl.textContent = selected.name;
-      render();
+    function animate() {
+      resizeRendererToDisplaySize();
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
     }
 
-    canvas.addEventListener("mousedown", (event) => {
-      if (event.button !== 0 && event.button !== 1) {
-        return;
-      }
-      isDragging = true;
-      dragDistancePx = 0;
-      isPanMode = event.shiftKey || event.button === 1;
-      if (event.button === 1) {
-        event.preventDefault();
-      }
-      lastMouseX = event.clientX;
-      lastMouseY = event.clientY;
-      canvas.style.cursor = "grabbing";
+    distanceRangeEl.addEventListener("input", applyFilters);
+    planetTypeEl.addEventListener("change", applyFilters);
+    showAxesEl.addEventListener("change", applyFilters);
+    showLabelsEl.addEventListener("change", () => {
+      statusEl.textContent =
+        showLabelsEl.value === "yes"
+          ? "Labels are not yet implemented for this three.js view."
+          : "Labels hidden.";
     });
 
-    window.addEventListener("mousemove", (event) => {
-      if (!isDragging) {
-        return;
-      }
-      const dx = event.clientX - lastMouseX;
-      const dy = event.clientY - lastMouseY;
-      dragDistancePx += Math.hypot(dx, dy);
-      lastMouseX = event.clientX;
-      lastMouseY = event.clientY;
-
-      if (isPanMode) {
-        const cameraState = getCameraState();
-        const worldPerPixel =
-          (2 * cameraDistance * Math.tan(fov * 0.5)) / canvas.clientHeight;
-        target.x -= cameraState.right.x * dx * worldPerPixel;
-        target.y -= cameraState.right.y * dx * worldPerPixel;
-        target.z -= cameraState.right.z * dx * worldPerPixel;
-        target.x += cameraState.up.x * dy * worldPerPixel;
-        target.y += cameraState.up.y * dy * worldPerPixel;
-        target.z += cameraState.up.z * dy * worldPerPixel;
-      } else {
-        yaw -= dx * 0.005;
-        pitch = clamp(pitch + dy * 0.005, -1.45, 1.45);
-      }
-
-      render();
-    });
-
-    window.addEventListener("mouseup", () => {
-      isDragging = false;
-      canvas.style.cursor = "grab";
-    });
-
-    canvas.addEventListener(
-      "wheel",
-      (event) => {
-        event.preventDefault();
-        const factor = event.deltaY > 0 ? 1.08 : 0.92;
-        cameraDistance = clamp(cameraDistance * factor, 10, 5000);
-        render();
-      },
-      { passive: false }
-    );
-
-    canvas.addEventListener("click", (event) => {
-      if (dragDistancePx > 4) {
-        dragDistancePx = 0;
-        return;
-      }
-
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      selectPlanetAt(x, y);
-    });
-
-    distanceRangeEl.addEventListener("input", render);
-
-    showAxesEl.addEventListener("change", render);
+    renderer.domElement.addEventListener("click", pickPlanet);
 
     showAxesEl.checked = false;
-    canvas.style.cursor = "grab";
-    statusEl.textContent = "Loading planets.csv...";
     nameEl.textContent = "All planets";
     classEl.textContent = "From planets.csv";
     distanceEl.textContent = "-";
+    statusEl.textContent = "Loading planets.csv...";
 
-    window.addEventListener("resize", render);
     loadPlanets();
-    render();
+    animate();
   </script>
 </body>
 </html>
+
+
