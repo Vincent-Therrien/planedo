@@ -36,6 +36,11 @@
             <option value="no">No</option>
           </select>
         </div>
+
+        <div class="control axis-toggle">
+          <label for="show-axes">Show axes</label>
+          <input id="show-axes" type="checkbox" />
+        </div>
       </div>
 
       <section class="planet-info" aria-live="polite">
@@ -60,6 +65,7 @@
     const classEl = document.getElementById("planet-class");
     const distanceEl = document.getElementById("planet-distance");
     const distanceRangeEl = document.getElementById("distance-range");
+    const showAxesEl = document.getElementById("show-axes");
     let isDragging = false;
     let lastMouseX = 0;
     let lastMouseY = 0;
@@ -76,6 +82,8 @@
       { x: -1.8, y: 0, z: 0, r: 0.9, inner: "#cbeeff", outer: "#3a96c9" },
       { x: 1.8, y: 0, z: 0, r: 0.9, inner: "#ffe1c3", outer: "#cc7d32" }
     ];
+    const axisRange = 100;
+    const tickSize = 0.14;
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
@@ -165,6 +173,88 @@
       };
     }
 
+    function draw3DLine(a, b, cameraState, width, height, focal, lineWidth) {
+      const pa = project(a, cameraState, width, height, focal);
+      const pb = project(b, cameraState, width, height, focal);
+      if (!pa || !pb) {
+        return;
+      }
+
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+    }
+
+    function drawAxes(cameraState, width, height, focal) {
+      ctx.strokeStyle = "#ffffff";
+
+      draw3DLine(
+        { x: -axisRange, y: 0, z: 0 },
+        { x: axisRange, y: 0, z: 0 },
+        cameraState,
+        width,
+        height,
+        focal,
+        1
+      );
+      draw3DLine(
+        { x: 0, y: -axisRange, z: 0 },
+        { x: 0, y: axisRange, z: 0 },
+        cameraState,
+        width,
+        height,
+        focal,
+        1
+      );
+      draw3DLine(
+        { x: 0, y: 0, z: -axisRange },
+        { x: 0, y: 0, z: axisRange },
+        cameraState,
+        width,
+        height,
+        focal,
+        1
+      );
+
+      ctx.globalAlpha = 0.8;
+      for (let i = -axisRange; i <= axisRange; i += 1) {
+        if (i === 0) {
+          continue;
+        }
+
+        draw3DLine(
+          { x: i, y: -tickSize, z: 0 },
+          { x: i, y: tickSize, z: 0 },
+          cameraState,
+          width,
+          height,
+          focal,
+          1
+        );
+        draw3DLine(
+          { x: -tickSize, y: i, z: 0 },
+          { x: tickSize, y: i, z: 0 },
+          cameraState,
+          width,
+          height,
+          focal,
+          1
+        );
+        draw3DLine(
+          { x: 0, y: -tickSize, z: i },
+          { x: 0, y: tickSize, z: i },
+          cameraState,
+          width,
+          height,
+          focal,
+          1
+        );
+      }
+      ctx.globalAlpha = 1;
+    }
+
     function render() {
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
@@ -174,6 +264,9 @@
       ctx.clearRect(0, 0, width, height);
       const focal = (height * 0.5) / Math.tan(fov * 0.5);
       const cameraState = getCameraState();
+      if (showAxesEl.checked) {
+        drawAxes(cameraState, width, height, focal);
+      }
 
       const projected = spheres
         .map((sphere) => {
@@ -256,6 +349,9 @@
       setDistance(Number(distanceRangeEl.value));
     });
 
+    showAxesEl.addEventListener("change", render);
+
+    showAxesEl.checked = false;
     canvas.style.cursor = "grab";
     statusEl.textContent = "Drag to orbit. Hold Shift and drag to move camera.";
     nameEl.textContent = "Demo spheres";
