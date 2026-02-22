@@ -7,7 +7,7 @@
     "title": "Exoplanet Viewer"
   },
   "controls": {
-    "maxDistance": "Max distance (ly)",
+    "maxDistance": "Maximum distance in light years (ly)",
     "planetType": "Planet type",
     "showLabels": "Show labels",
     "showAxes": "Show Equatorial Grid (RA/Dec)",

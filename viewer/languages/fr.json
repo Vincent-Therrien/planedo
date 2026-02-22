@@ -7,7 +7,7 @@
     "title": "Visualiseur d'exoplanètes"
   },
   "controls": {
-    "maxDistance": "Distance max (al)",
+    "maxDistance": "Distance maximale en années lumière (al)",
     "planetType": "Type de planète",
     "showLabels": "Afficher les etiquettes",
     "showAxes": "Afficher la grille équatoriale (AD/Dec)",
@@ -46,7 +46,7 @@
     "selectedPlanet": "{name} sélectionnée.",
     "loading": "Chargement de planets.csv...",
     "loaded": "{count} planètes chargées. Glissez pour orbiter, clic droit-glisse pour déplacer, molette pour zoomer.",
-    "distanceSummary": "{maxDistance} al max ({visible}/{total} affichées)",
+    "distanceSummary": "{maxDistance} al ({visible}/{total} affichées)",
     "gridRadiusValue": "{value} al",
     "distanceValue": "{value} al",
     "loadError": "Impossible de charger planets.csv : {message}",
