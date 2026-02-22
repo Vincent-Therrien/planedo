@@ -12,6 +12,7 @@
     "showLabels": "Show labels",
     "showAxes": "Show Equatorial Grid (RA/Dec)",
     "showGcArrow": "Show Galactic Center Arrow",
+    "showSelectionGuides": "Show Selection Triangle",
     "resetView": "Reset View to Earth",
     "yes": "Yes",
     "no": "No",
@@ -25,7 +26,7 @@
   },
   "legend": {
     "title": "Legend",
-    "earth": "Earth (Deep blue)",
+    "earth": "Earth",
     "inside": "Planet inside equatorial grid",
     "outside": "Planet outside equatorial grid",
     "selected": "Selected planet",
@@ -43,7 +44,7 @@
   },
   "status": {
     "noPlanetSelected": "No planet selected.",
-    "selectedPlanet": "Selected {name}.",
+    "selectedPlanet": "{name}",
     "loading": "Loading planets.csv...",
     "loaded": "Loaded {count} planets. Drag to orbit, right-drag to pan, scroll to zoom.",
     "distanceSummary": "{maxDistance} ly max ({visible}/{total} shown)",

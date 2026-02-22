@@ -9,9 +9,10 @@
   "controls": {
     "maxDistance": "Distance maximale en années lumière (al)",
     "planetType": "Type de planète",
-    "showLabels": "Afficher les etiquettes",
+    "showLabels": "Afficher les étiquettes",
     "showAxes": "Afficher la grille équatoriale (AD/Dec)",
-    "showGcArrow": "Afficher la fleche vers le centre galactique",
+    "showGcArrow": "Afficher la flèche vers le centre galactique",
+    "showSelectionGuides": "Montrer le triangle de sélection",
     "resetView": "Recentrer sur la Terre",
     "yes": "Oui",
     "no": "Non",
@@ -25,14 +26,14 @@
   },
   "legend": {
     "title": "Légende",
-    "earth": "Terre (bleu profond)",
+    "earth": "Terre",
     "inside": "Planète à l'intérieur de la grille équatoriale",
     "outside": "Planète à l'extérieur de la grille équatoriale",
     "selected": "Planète sélectionnée",
     "gridRadius": "Rayon de la grille :"
   },
   "selection": {
-    "title": "Selection",
+    "title": "Sélection",
     "name": "Nom :",
     "type": "Type :",
     "ra": "AD :",
@@ -43,10 +44,10 @@
   },
   "status": {
     "noPlanetSelected": "Aucune planète sélectionnée.",
-    "selectedPlanet": "{name} sélectionnée.",
+    "selectedPlanet": "{name}",
     "loading": "Chargement de planets.csv...",
     "loaded": "{count} planètes chargées. Glissez pour orbiter, clic droit-glisse pour déplacer, molette pour zoomer.",
-    "distanceSummary": "{maxDistance} al ({visible}/{total} affichées)",
+    "distanceSummary": "{maxDistance} années lumière ({visible}/{total} affichées)",
     "gridRadiusValue": "{value} al",
     "distanceValue": "{value} al",
     "loadError": "Impossible de charger planets.csv : {message}",

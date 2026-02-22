@@ -50,6 +50,11 @@
         </div>
 
         <div class="control axis-toggle">
+          <label id="label-show-selection-guides" for="show-selection-guides"></label>
+          <input id="show-selection-guides" type="checkbox" />
+        </div>
+
+        <div class="control axis-toggle">
           <label id="label-show-gc-arrow" for="show-gc-arrow"></label>
           <input id="show-gc-arrow" type="checkbox" />
         </div>
@@ -59,15 +64,6 @@
         </div>
       </div>
 
-      <section class="legend-info" aria-live="polite">
-        <h2 id="legend-title"></h2>
-        <p><span class="legend-swatch legend-earth"></span> <span id="legend-earth"></span></p>
-        <p><span class="legend-swatch legend-inside"></span> <span id="legend-inside"></span></p>
-        <p><span class="legend-swatch legend-outside"></span> <span id="legend-outside"></span></p>
-        <p><span class="legend-swatch legend-selected"></span> <span id="legend-selected"></span></p>
-        <p><strong id="label-grid-radius"></strong> <span id="grid-radius-ly"></span></p>
-      </section>
-
       <section class="planet-info" aria-live="polite">
         <h2 id="selection-title"></h2>
         <p id="selection-status"></p>
@@ -76,6 +72,15 @@
         <p><strong id="label-ra"></strong> <span id="planet-ra"></span></p>
         <p><strong id="label-dec"></strong> <span id="planet-dec"></span></p>
         <p><strong id="label-distance"></strong> <span id="planet-distance"></span></p>
+      </section>
+
+      <section class="legend-info" aria-live="polite">
+        <h2 id="legend-title"></h2>
+        <p><span class="legend-swatch legend-earth"></span> <span id="legend-earth"></span></p>
+        <p><span class="legend-swatch legend-inside"></span> <span id="legend-inside"></span></p>
+        <p><span class="legend-swatch legend-outside"></span> <span id="legend-outside"></span></p>
+        <p><span class="legend-swatch legend-selected"></span> <span id="legend-selected"></span></p>
+        <p><strong id="label-grid-radius"></strong> <span id="grid-radius-ly"></span></p>
       </section>
     </aside>
 
@@ -112,6 +117,7 @@
     const showLabelsEl = document.getElementById("show-labels");
     const showAxesEl = document.getElementById("show-axes");
     const showGalacticArrowEl = document.getElementById("show-gc-arrow");
+    const showSelectionGuidesEl = document.getElementById("show-selection-guides");
     const gridRadiusEl = document.getElementById("grid-radius-ly");
     const resetViewEl = document.getElementById("reset-view");
     const localeSelectEl = document.getElementById("locale-select");
@@ -193,6 +199,11 @@
       document.getElementById("label-show-labels").textContent = t("controls.showLabels");
       document.getElementById("label-show-axes").textContent = t("controls.showAxes");
       document.getElementById("label-show-gc-arrow").textContent = t("controls.showGcArrow");
+      const selectionGuidesLabel = t("controls.showSelectionGuides");
+      document.getElementById("label-show-selection-guides").textContent =
+        selectionGuidesLabel === "controls.showSelectionGuides"
+          ? "Show Selection Triangle"
+          : selectionGuidesLabel;
       document.getElementById("reset-view").textContent = t("controls.resetView");
 
       document.getElementById("planet-type-all").textContent = t("controls.types.all");
@@ -329,6 +340,194 @@
     const raGroup = new THREE.Group();
     raGroup.visible = false;
     scene.add(raGroup);
+    const selectionGuideGroup = new THREE.Group();
+    selectionGuideGroup.visible = false;
+    scene.add(selectionGuideGroup);
+
+    function createGuideLine(colorHex) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
+      const material = new THREE.LineBasicMaterial({
+        color: colorHex
+      });
+      const line = new THREE.Line(geometry, material);
+      line.renderOrder = 3;
+      return line;
+    }
+
+    function setLineEndpoints(line, start, end) {
+      const position = line.geometry.attributes.position.array;
+      position[0] = start.x;
+      position[1] = start.y;
+      position[2] = start.z;
+      position[3] = end.x;
+      position[4] = end.y;
+      position[5] = end.z;
+      line.geometry.attributes.position.needsUpdate = true;
+      line.geometry.computeBoundingSphere();
+    }
+
+    const horizontalGuideLine = createGuideLine(0x26ffd5);
+    const verticalGuideLine = createGuideLine(0xff6aa2);
+    const diagonalGuideLine = createGuideLine(0xffde59);
+    selectionGuideGroup.add(horizontalGuideLine);
+    selectionGuideGroup.add(verticalGuideLine);
+    selectionGuideGroup.add(diagonalGuideLine);
+
+    const ANGLE_ARC_SEGMENTS = 32;
+    const ANGLE_MARKER_RADIUS = 14;
+    const ANGLE_LABEL_SCREEN_WIDTH_PX = 110;
+    const ANGLE_LABEL_SCREEN_HEIGHT_PX = 42;
+    const angleArcGeometry = new THREE.BufferGeometry();
+    angleArcGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(new Float32Array((ANGLE_ARC_SEGMENTS + 1) * 3), 3)
+    );
+    const angleArcLine = new THREE.Line(
+      angleArcGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0xffe680,
+        depthTest: false
+      })
+    );
+    angleArcLine.renderOrder = 3;
+    selectionGuideGroup.add(angleArcLine);
+
+    const angleLabelCanvas = document.createElement("canvas");
+    angleLabelCanvas.width = 192;
+    angleLabelCanvas.height = 72;
+    const angleLabelContext = angleLabelCanvas.getContext("2d");
+    const angleLabelTexture = new THREE.CanvasTexture(angleLabelCanvas);
+    const angleLabelSprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: angleLabelTexture,
+        transparent: true,
+        depthTest: false
+      })
+    );
+    angleLabelSprite.scale.set(1, 1, 1);
+    angleLabelSprite.renderOrder = 4;
+    selectionGuideGroup.add(angleLabelSprite);
+
+    function updateAngleLabelScreenSize() {
+      const viewportHeight = Math.max(1, canvas.clientHeight);
+      const fovRad = THREE.MathUtils.degToRad(camera.fov);
+      const distanceToCamera = camera.position.distanceTo(angleLabelSprite.position);
+      const frustumHeightAtLabel = 2 * distanceToCamera * Math.tan(fovRad * 0.5);
+      const worldPerPixel = frustumHeightAtLabel / viewportHeight;
+      angleLabelSprite.scale.set(
+        worldPerPixel * ANGLE_LABEL_SCREEN_WIDTH_PX,
+        worldPerPixel * ANGLE_LABEL_SCREEN_HEIGHT_PX,
+        1
+      );
+    }
+
+    function updateAngleLabel(text) {
+      angleLabelContext.clearRect(0, 0, angleLabelCanvas.width, angleLabelCanvas.height);
+      angleLabelContext.fillStyle = "rgba(6, 10, 18, 0.7)";
+      angleLabelContext.fillRect(8, 10, angleLabelCanvas.width - 16, angleLabelCanvas.height - 20);
+      angleLabelContext.strokeStyle = "rgba(255, 255, 255, 0.35)";
+      angleLabelContext.strokeRect(8, 10, angleLabelCanvas.width - 16, angleLabelCanvas.height - 20);
+      angleLabelContext.font = "26px monospace";
+      angleLabelContext.textAlign = "center";
+      angleLabelContext.textBaseline = "middle";
+      angleLabelContext.fillStyle = "#ffefab";
+      angleLabelContext.fillText(text, angleLabelCanvas.width / 2, angleLabelCanvas.height / 2);
+      angleLabelTexture.needsUpdate = true;
+    }
+
+    function updateSelectionGuides() {
+      const canShow =
+        showSelectionGuidesEl.checked &&
+        selectedPlanet &&
+        selectedPlanet !== earthMesh &&
+        selectedPlanet.visible;
+
+      if (!canShow) {
+        selectionGuideGroup.visible = false;
+        return;
+      }
+
+      const earthPos = earthMesh.position.clone();
+      const planetPos = selectedPlanet.position.clone();
+      const projectedPos = new THREE.Vector3(planetPos.x, earthPos.y, planetPos.z);
+      const horizontalVec = projectedPos.clone().sub(earthPos);
+      const diagonalVec = planetPos.clone().sub(earthPos);
+      const horizontalLen = horizontalVec.length();
+      const diagonalLen = diagonalVec.length();
+
+      selectionGuideGroup.visible = true;
+      setLineEndpoints(horizontalGuideLine, earthPos, projectedPos);
+      setLineEndpoints(verticalGuideLine, projectedPos, planetPos);
+      setLineEndpoints(diagonalGuideLine, earthPos, planetPos);
+
+      if (horizontalLen < 0.001 || diagonalLen < 0.001) {
+        angleArcLine.visible = false;
+        angleLabelSprite.visible = false;
+        return;
+      }
+
+      const angleRad = Math.acos(
+        THREE.MathUtils.clamp(
+          horizontalVec.clone().normalize().dot(diagonalVec.clone().normalize()),
+          -1,
+          1
+        )
+      );
+
+      if (angleRad < 0.001) {
+        angleArcLine.visible = false;
+        angleLabelSprite.visible = false;
+        return;
+      }
+
+      const horizontalDir = horizontalVec.clone().normalize();
+      const planeUp = diagonalVec
+        .clone()
+        .sub(horizontalDir.clone().multiplyScalar(diagonalVec.dot(horizontalDir)))
+        .normalize();
+      const arcRadius = Math.max(
+        1.5,
+        Math.min(ANGLE_MARKER_RADIUS, horizontalLen * 0.45, diagonalLen * 0.45)
+      );
+      const arcPositions = angleArcLine.geometry.attributes.position.array;
+
+      for (let i = 0; i <= ANGLE_ARC_SEGMENTS; i += 1) {
+        const t = (i / ANGLE_ARC_SEGMENTS) * angleRad;
+        const dir = horizontalDir
+          .clone()
+          .multiplyScalar(Math.cos(t))
+          .add(planeUp.clone().multiplyScalar(Math.sin(t)))
+          .normalize();
+        const point = earthPos.clone().add(dir.multiplyScalar(arcRadius));
+        const idx = i * 3;
+        arcPositions[idx] = point.x;
+        arcPositions[idx + 1] = point.y;
+        arcPositions[idx + 2] = point.z;
+      }
+      angleArcLine.geometry.attributes.position.needsUpdate = true;
+      angleArcLine.geometry.computeBoundingSphere();
+      angleArcLine.visible = true;
+
+      const labelAngle = angleRad * 0.5;
+      const labelDir = horizontalDir
+        .clone()
+        .multiplyScalar(Math.cos(labelAngle))
+        .add(planeUp.clone().multiplyScalar(Math.sin(labelAngle)))
+        .normalize();
+      angleLabelSprite.position.copy(
+        earthPos.clone().add(labelDir.multiplyScalar(Math.max(arcRadius * 1.25, 5)))
+      );
+      if (planetPos.y > 0) {
+        updateAngleLabel(`${THREE.MathUtils.radToDeg(angleRad).toFixed(1)}\u00b0`);
+      }
+      else {
+        updateAngleLabel(`${THREE.MathUtils.radToDeg(angleRad * -1.0).toFixed(1)}\u00b0`);
+      }
+      updateAngleLabelScreenSize();
+      angleLabelSprite.visible = true;
+      angleLabelSprite.quaternion.copy(camera.quaternion);
+    }
 
     function createTextSprite(label, color, fontSize = 18) {
       const canvasText = document.createElement("canvas");
@@ -758,6 +957,7 @@
         Math.max(1.2, targetWorldRadius * 0.05)
       );
       updatePlanetBaseColors(targetWorldRadius);
+      updateSelectionGuides();
       raGroup.children.forEach((obj) => {
         if (obj.type === "Sprite") {
           obj.quaternion.copy(camera.quaternion);
@@ -778,6 +978,7 @@
     planetTypeEl.addEventListener("change", applyFilters);
     showAxesEl.addEventListener("change", applyFilters);
     showGalacticArrowEl.addEventListener("change", applyFilters);
+    showSelectionGuidesEl.addEventListener("change", applyFilters);
     showLabelsEl.addEventListener("change", applyFilters);
     resetViewEl.addEventListener("click", resetViewToEarth);
     localeSelectEl.addEventListener("change", async () => {
@@ -826,6 +1027,7 @@
 
       showAxesEl.checked = true;
       showGalacticArrowEl.checked = false;
+      showSelectionGuidesEl.checked = true;
       nameEl.textContent = t("fallback.allPlanets");
       classEl.textContent = t("fallback.fromCsv");
       raEl.textContent = t("selection.placeholder");
