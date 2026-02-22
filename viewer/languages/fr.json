@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "title": "Visualiseur d'exoplanètes",
+    "canvasAriaLabel": "Scene 3D des exoplanètes"
+  },
+  "header": {
+    "title": "Visualiseur de position des exoplanètes"
+  },
+  "controls": {
+    "maxDistance": "Distance max (al)",
+    "planetType": "Type de planète",
+    "showLabels": "Afficher les etiquettes",
+    "showAxes": "Afficher la grille équatoriale (AD/Dec)",
+    "showGcArrow": "Afficher la fleche vers le centre galactique",
+    "resetView": "Recentrer sur la Terre",
+    "yes": "Oui",
+    "no": "Non",
+    "types": {
+      "all": "Toutes",
+      "gasGiant": "Géante gazeuse",
+      "neptuneLike": "Type Neptune",
+      "superEarth": "Super-Terre",
+      "terrestrial": "Tellurique"
+    }
+  },
+  "legend": {
+    "title": "Légende",
+    "earth": "Terre (bleu profond)",
+    "inside": "Planète a l'intérieur de la grille équatoriale",
+    "outside": "Planète a l'extérieur de la grille équatoriale",
+    "selected": "Planète sélectionnée",
+    "gridRadius": "Rayon de la grille :"
+  },
+  "selection": {
+    "title": "Selection",
+    "name": "Nom :",
+    "type": "Type :",
+    "ra": "AD :",
+    "dec": "Dec :",
+    "distance": "Distance :",
+    "none": "Aucune",
+    "placeholder": "-"
+  },
+  "status": {
+    "noPlanetSelected": "Aucune planète sélectionnée.",
+    "selectedPlanet": "{name} sélectionnée.",
+    "loading": "Chargement de planets.csv...",
+    "loaded": "{count} planètes chargées. Glissez pour orbiter, clic droit-glisse pour déplacer, molette pour zoomer.",
+    "distanceSummary": "{maxDistance} al max ({visible}/{total} affichées)",
+    "gridRadiusValue": "{value} al",
+    "distanceValue": "{value} al",
+    "loadError": "Impossible de charger planets.csv : {message}",
+    "fileProtocolError": "Cette page est ouverte en file://, donc le navigateur bloque la lecture de planets.csv. Lancez un serveur local et ouvrez http://localhost.",
+    "planetsFetchFailed": "Échec du chargement de planets.csv ({status})"
+  },
+  "fallback": {
+    "runLocalServer": "Lancer un serveur local",
+    "localhost": "localhost:8000",
+    "httpServerCommand": "python -m http.server 8000",
+    "allPlanets": "Toutes les planètes",
+    "fromCsv": "Depuis planets.csv"
+  },
+  "objects": {
+    "earth": "Terre",
+    "reference": "Reference",
+    "sagittariusA": "Sagittarius A*",
+    "galacticCenter": "Centre galactique",
+    "unknown": "Inconnu"
+  }
+}

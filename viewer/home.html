@@ -1,80 +1,86 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exoplanet Viewer</title>
+  <title></title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <h1>Exoplanet Position Viewer</h1>
-      <p class="subtitle">3D map of confirmed exoplanets</p>
+      <h1 id="heading-title"></h1>
+      <div class="locale-row">
+        <span class="locale-icon" aria-hidden="true">🌐</span>
+        <select id="locale-select" aria-label="Language">
+          <option value="en">English</option>
+          <option value="fr">Francais</option>
+        </select>
+      </div>
 
       <div class="controls">
         <div class="control">
-          <label for="distance-range">Max distance (ly)</label>
+          <label id="label-distance-range" for="distance-range"></label>
           <input id="distance-range" type="range" min="2" max="100" step="0.1" value="8" />
-          <p id="distance-summary" class="subtitle">-</p>
+          <p id="distance-summary" class="subtitle"></p>
         </div>
 
         <div class="control">
-          <label for="planet-type">Planet type</label>
+          <label id="label-planet-type" for="planet-type"></label>
           <select id="planet-type">
-            <option value="all">All</option>
-            <option value="gas-giant">Gas Giant</option>
-            <option value="neptune-like">Neptune-like</option>
-            <option value="super-earth">Super Earth</option>
-            <option value="terrestrial">Terrestrial</option>
+            <option id="planet-type-all" value="all"></option>
+            <option id="planet-type-gas-giant" value="gas-giant"></option>
+            <option id="planet-type-neptune-like" value="neptune-like"></option>
+            <option id="planet-type-super-earth" value="super-earth"></option>
+            <option id="planet-type-terrestrial" value="terrestrial"></option>
           </select>
         </div>
 
         <div class="control">
-          <label for="show-labels">Show labels</label>
+          <label id="label-show-labels" for="show-labels"></label>
           <select id="show-labels">
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option id="show-labels-yes" value="yes"></option>
+            <option id="show-labels-no" value="no"></option>
           </select>
         </div>
 
         <div class="control axis-toggle">
-          <label for="show-axes">Show Equatorial Grid (RA/Dec)</label>
+          <label id="label-show-axes" for="show-axes"></label>
           <input id="show-axes" type="checkbox" />
         </div>
 
         <div class="control axis-toggle">
-          <label for="show-gc-arrow">Show Galactic Center Arrow</label>
+          <label id="label-show-gc-arrow" for="show-gc-arrow"></label>
           <input id="show-gc-arrow" type="checkbox" />
         </div>
 
         <div class="control">
-          <button id="reset-view" type="button">Reset View to Earth</button>
+          <button id="reset-view" type="button"></button>
         </div>
       </div>
 
       <section class="legend-info" aria-live="polite">
-        <h2>Legend</h2>
-        <p><span class="legend-swatch legend-earth"></span> Earth (Deep blue)</p>
-        <p><span class="legend-swatch legend-inside"></span> Planet inside equatorial grid</p>
-        <p><span class="legend-swatch legend-outside"></span> Planet outside equatorial grid</p>
-        <p><span class="legend-swatch legend-selected"></span> Selected planet</p>
-        <p><strong>Grid radius:</strong> <span id="grid-radius-ly">-</span></p>
+        <h2 id="legend-title"></h2>
+        <p><span class="legend-swatch legend-earth"></span> <span id="legend-earth"></span></p>
+        <p><span class="legend-swatch legend-inside"></span> <span id="legend-inside"></span></p>
+        <p><span class="legend-swatch legend-outside"></span> <span id="legend-outside"></span></p>
+        <p><span class="legend-swatch legend-selected"></span> <span id="legend-selected"></span></p>
+        <p><strong id="label-grid-radius"></strong> <span id="grid-radius-ly"></span></p>
       </section>
 
       <section class="planet-info" aria-live="polite">
-        <h2>Selection</h2>
-        <p id="selection-status">Click a sphere to see details.</p>
-        <p><strong>Name:</strong> <span id="planet-name">None</span></p>
-        <p><strong>Type:</strong> <span id="planet-class">-</span></p>
-        <p><strong>RA:</strong> <span id="planet-ra">-</span></p>
-        <p><strong>Dec:</strong> <span id="planet-dec">-</span></p>
-        <p><strong>Distance:</strong> <span id="planet-distance">-</span></p>
+        <h2 id="selection-title"></h2>
+        <p id="selection-status"></p>
+        <p><strong id="label-name"></strong> <span id="planet-name"></span></p>
+        <p><strong id="label-type"></strong> <span id="planet-class"></span></p>
+        <p><strong id="label-ra"></strong> <span id="planet-ra"></span></p>
+        <p><strong id="label-dec"></strong> <span id="planet-dec"></span></p>
+        <p><strong id="label-distance"></strong> <span id="planet-distance"></span></p>
       </section>
     </aside>
 
     <main class="canvas-wrap">
-      <canvas id="scene-canvas" aria-label="3D exoplanet scene"></canvas>
+      <canvas id="scene-canvas"></canvas>
     </main>
   </div>
 
@@ -91,6 +97,8 @@
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
+    const FALLBACK_LOCALE = "en";
+
     const canvas = document.getElementById("scene-canvas");
     const statusEl = document.getElementById("selection-status");
     const nameEl = document.getElementById("planet-name");
@@ -106,6 +114,10 @@
     const showGalacticArrowEl = document.getElementById("show-gc-arrow");
     const gridRadiusEl = document.getElementById("grid-radius-ly");
     const resetViewEl = document.getElementById("reset-view");
+    const localeSelectEl = document.getElementById("locale-select");
+
+    let strings = {};
+    let currentLocale = FALLBACK_LOCALE;
 
     const PARSEC_TO_LIGHTYEAR = 3.26156;
     const pointRadius = 0.75;
@@ -134,6 +146,115 @@
     let pointerDownX = 0;
     let pointerDownY = 0;
 
+    function formatTemplate(template, vars = {}) {
+      return String(template).replace(/\{(\w+)\}/g, (_, key) => (key in vars ? String(vars[key]) : `{${key}}`));
+    }
+
+    function t(path, vars = {}) {
+      const value = path.split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), strings);
+      const template = value !== undefined ? value : path;
+      return formatTemplate(template, vars);
+    }
+
+    function resolveLocaleFromBrowser() {
+      const browserLang = (navigator.language || FALLBACK_LOCALE).toLowerCase();
+      return browserLang.split("-")[0];
+    }
+
+    async function fetchLocale(locale) {
+      const response = await fetch(`./languages/${locale}.json`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Locale file not found (${locale})`);
+      }
+      return response.json();
+    }
+
+    async function loadLocaleStrings(locale = null) {
+      const requestedLocale = (locale || resolveLocaleFromBrowser()).toLowerCase();
+      currentLocale = requestedLocale;
+      try {
+        strings = await fetchLocale(requestedLocale);
+      } catch {
+        currentLocale = FALLBACK_LOCALE;
+        strings = await fetchLocale(FALLBACK_LOCALE);
+      }
+    }
+
+    function applyStaticTexts() {
+      document.title = t("meta.title");
+      canvas.setAttribute("aria-label", t("meta.canvasAriaLabel"));
+
+      document.getElementById("heading-title").textContent = t("header.title");
+      localeSelectEl.value = currentLocale;
+      document.documentElement.lang = currentLocale;
+
+      document.getElementById("label-distance-range").textContent = t("controls.maxDistance");
+      document.getElementById("label-planet-type").textContent = t("controls.planetType");
+      document.getElementById("label-show-labels").textContent = t("controls.showLabels");
+      document.getElementById("label-show-axes").textContent = t("controls.showAxes");
+      document.getElementById("label-show-gc-arrow").textContent = t("controls.showGcArrow");
+      document.getElementById("reset-view").textContent = t("controls.resetView");
+
+      document.getElementById("planet-type-all").textContent = t("controls.types.all");
+      document.getElementById("planet-type-gas-giant").textContent = t("controls.types.gasGiant");
+      document.getElementById("planet-type-neptune-like").textContent = t("controls.types.neptuneLike");
+      document.getElementById("planet-type-super-earth").textContent = t("controls.types.superEarth");
+      document.getElementById("planet-type-terrestrial").textContent = t("controls.types.terrestrial");
+
+      document.getElementById("show-labels-yes").textContent = t("controls.yes");
+      document.getElementById("show-labels-no").textContent = t("controls.no");
+
+      document.getElementById("legend-title").textContent = t("legend.title");
+      document.getElementById("legend-earth").textContent = t("legend.earth");
+      document.getElementById("legend-inside").textContent = t("legend.inside");
+      document.getElementById("legend-outside").textContent = t("legend.outside");
+      document.getElementById("legend-selected").textContent = t("legend.selected");
+      document.getElementById("label-grid-radius").textContent = t("legend.gridRadius");
+
+      document.getElementById("selection-title").textContent = t("selection.title");
+      document.getElementById("label-name").textContent = t("selection.name");
+      document.getElementById("label-type").textContent = t("selection.type");
+      document.getElementById("label-ra").textContent = t("selection.ra");
+      document.getElementById("label-dec").textContent = t("selection.dec");
+      document.getElementById("label-distance").textContent = t("selection.distance");
+    }
+
+    function setLocalizedStaticObjects() {
+      earthMesh.userData.name = t("objects.earth");
+      earthMesh.userData.type = t("objects.reference");
+      galacticCenterMesh.userData.name = t("objects.sagittariusA");
+      galacticCenterMesh.userData.type = t("objects.galacticCenter");
+    }
+
+    function syncLocalizedPlanetTypes() {
+      for (const mesh of planetGroup.children) {
+        if (mesh.userData.typeSlug === "unknown") {
+          mesh.userData.type = t("objects.unknown");
+        }
+      }
+    }
+
+    function refreshLocalizedDynamicText() {
+      syncLocalizedPlanetTypes();
+      if (selectedPlanet) {
+        updateStatusForSelection(selectedPlanet.userData);
+        return;
+      }
+      if (planets.length > 0) {
+        statusEl.textContent = t("status.loaded", { count: planets.length + 1 });
+      }
+    }
+
+    async function switchLocale(locale) {
+      await loadLocaleStrings(locale);
+      applyStaticTexts();
+      setLocalizedStaticObjects();
+      refreshLocalizedDynamicText();
+      if (planets.length > 0) {
+        applyFilters();
+      }
+    }
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
@@ -159,8 +280,8 @@
     const earthMaterial = new THREE.MeshBasicMaterial({ color: COLOR_EARTH });
     const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
     earthMesh.userData = {
-      name: "Earth",
-      type: "Reference",
+      name: "",
+      type: "",
       distanceLy: 0,
       isEarth: true
     };
@@ -182,8 +303,8 @@
       galacticCenterDirection.clone().multiplyScalar(GALACTIC_CENTER_DISTANCE_LY)
     );
     galacticCenterMesh.userData = {
-      name: "Sagittarius A*",
-      type: "Galactic Center",
+      name: "",
+      type: "",
       raDeg: GALACTIC_CENTER_RA_DEG,
       decDeg: GALACTIC_CENTER_DEC_DEG,
       distanceLy: GALACTIC_CENTER_DISTANCE_LY,
@@ -367,7 +488,7 @@
 
         parsed.push({
           name,
-          type: "Unknown",
+          type: t("objects.unknown"),
           raDeg,
           decDeg,
           distanceLy,
@@ -384,26 +505,26 @@
 
     function updateStatusForSelection(planet) {
       if (!planet) {
-        statusEl.textContent = "No planet selected.";
-        nameEl.textContent = "None";
-        classEl.textContent = "-";
-        raEl.textContent = "-";
-        decEl.textContent = "-";
-        selectionDistanceEl.textContent = "-";
+        statusEl.textContent = t("status.noPlanetSelected");
+        nameEl.textContent = t("selection.none");
+        classEl.textContent = t("selection.placeholder");
+        raEl.textContent = t("selection.placeholder");
+        decEl.textContent = t("selection.placeholder");
+        selectionDistanceEl.textContent = t("selection.placeholder");
         return;
       }
 
-      statusEl.textContent = `Selected ${planet.name}.`;
+      statusEl.textContent = t("status.selectedPlanet", { name: planet.name });
       nameEl.textContent = planet.name;
-      classEl.textContent = planet.type || "Unknown";
+      classEl.textContent = planet.type || t("objects.unknown");
       raEl.textContent = formatRaHms(planet.raDeg);
       decEl.textContent = formatDecDms(planet.decDeg);
-      selectionDistanceEl.textContent = `${planet.distanceLy.toFixed(2)} ly`;
+      selectionDistanceEl.textContent = t("status.distanceValue", { value: planet.distanceLy.toFixed(2) });
     }
 
     function formatRaHms(raDeg) {
       if (!Number.isFinite(raDeg)) {
-        return "-";
+        return t("selection.placeholder");
       }
       let totalSeconds = (raDeg / 15) * 3600;
       totalSeconds = ((totalSeconds % 86400) + 86400) % 86400;
@@ -415,7 +536,7 @@
 
     function formatDecDms(decDeg) {
       if (!Number.isFinite(decDeg)) {
-        return "-";
+        return t("selection.placeholder");
       }
       const sign = decDeg >= 0 ? "+" : "-";
       const abs = Math.abs(decDeg);
@@ -423,7 +544,7 @@
       const minutesFull = (abs - degrees) * 60;
       const minutes = Math.floor(minutesFull);
       const seconds = Math.floor((minutesFull - minutes) * 60);
-      return `${sign}${String(degrees).padStart(2, "0")}° ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+      return `${sign}${String(degrees).padStart(2, "0")}\u00b0 ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
     }
 
     function applyFilters() {
@@ -452,7 +573,11 @@
           obj.visible = showRaLabels;
         }
       }
-      distanceSummaryEl.textContent = `${maxDistanceLy} ly max (${visibleCount}/${planets.length + 1} shown)`;
+      distanceSummaryEl.textContent = t("status.distanceSummary", {
+        maxDistance: maxDistanceLy,
+        visible: visibleCount,
+        total: planets.length + 1
+      });
 
       if (selectedPlanet && selectedPlanet !== earthMesh && !selectedPlanet.visible) {
         selectedPlanet = null;
@@ -495,14 +620,12 @@
     async function loadPlanets() {
       try {
         if (window.location.protocol === "file:") {
-          throw new Error(
-            "This page is opened with file://, so browsers block reading planets.csv. Start a local server and open http://localhost instead."
-          );
+          throw new Error(t("status.fileProtocolError"));
         }
 
         const response = await fetch("./planets.csv", { cache: "no-store" });
         if (!response.ok) {
-          throw new Error(`Failed to load planets.csv (${response.status})`);
+          throw new Error(t("status.planetsFetchFailed", { status: response.status }));
         }
 
         const csvText = await response.text();
@@ -521,13 +644,13 @@
         updateZoomLimits();
         controls.update();
 
-        statusEl.textContent = `Loaded ${planets.length + 1} planets. Drag to orbit, right-drag to pan, scroll to zoom.`;
+        statusEl.textContent = t("status.loaded", { count: planets.length + 1 });
         applyFilters();
       } catch (error) {
-        statusEl.textContent = `Could not load planets.csv: ${error.message}`;
-        classEl.textContent = "Run local server";
-        nameEl.textContent = "localhost:8000";
-        distanceSummaryEl.textContent = "python -m http.server 8000";
+        statusEl.textContent = t("status.loadError", { message: error.message });
+        classEl.textContent = t("fallback.runLocalServer");
+        nameEl.textContent = t("fallback.localhost");
+        distanceSummaryEl.textContent = t("fallback.httpServerCommand");
       }
     }
 
@@ -624,7 +747,7 @@
       resizeRendererToDisplaySize();
       updatePlanetScreenSizes();
       const targetWorldRadius = getCurrentGridWorldRadius();
-      gridRadiusEl.textContent = `${targetWorldRadius.toFixed(2)} ly`;
+      gridRadiusEl.textContent = t("status.gridRadiusValue", { value: targetWorldRadius.toFixed(2) });
       const scale = Math.max(0.001, targetWorldRadius / RA_BASE_RADIUS);
       raGroup.position.copy(earthMesh.position);
       raGroup.scale.setScalar(scale);
@@ -657,6 +780,9 @@
     showGalacticArrowEl.addEventListener("change", applyFilters);
     showLabelsEl.addEventListener("change", applyFilters);
     resetViewEl.addEventListener("click", resetViewToEarth);
+    localeSelectEl.addEventListener("change", async () => {
+      await switchLocale(localeSelectEl.value);
+    });
 
     renderer.domElement.addEventListener("mousedown", (event) => {
       if (event.button !== 0) {
@@ -688,18 +814,31 @@
       pickPlanet(event);
     });
 
-    showAxesEl.checked = true;
-    showGalacticArrowEl.checked = false;
-    nameEl.textContent = "All planets";
-    classEl.textContent = "From planets.csv";
-    raEl.textContent = "-";
-    decEl.textContent = "-";
-    selectionDistanceEl.textContent = "-";
-    distanceSummaryEl.textContent = "-";
-    statusEl.textContent = "Loading planets.csv...";
+    async function init() {
+      try {
+        await loadLocaleStrings();
+      } catch {
+        strings = {};
+        currentLocale = FALLBACK_LOCALE;
+      }
+      applyStaticTexts();
+      setLocalizedStaticObjects();
 
-    loadPlanets();
-    animate();
+      showAxesEl.checked = true;
+      showGalacticArrowEl.checked = false;
+      nameEl.textContent = t("fallback.allPlanets");
+      classEl.textContent = t("fallback.fromCsv");
+      raEl.textContent = t("selection.placeholder");
+      decEl.textContent = t("selection.placeholder");
+      selectionDistanceEl.textContent = t("selection.placeholder");
+      distanceSummaryEl.textContent = t("selection.placeholder");
+      statusEl.textContent = t("status.loading");
+
+      await loadPlanets();
+      animate();
+    }
+
+    init();
   </script>
 </body>
 </html>

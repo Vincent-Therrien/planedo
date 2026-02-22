@@ -56,6 +56,26 @@ body {
   font-size: 0.9rem;
 }
 
+.locale-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.locale-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.locale-row select {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: black;
+  color: var(--text);
+}
+
 .controls {
   margin-top: 0.5rem;
   display: grid;

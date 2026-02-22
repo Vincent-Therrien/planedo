@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "title": "Exoplanet Viewer",
+    "canvasAriaLabel": "3D exoplanet scene"
+  },
+  "header": {
+    "title": "Exoplanet Position Viewer"
+  },
+  "controls": {
+    "languageSummary": "Language",
+    "languageLabel": "Choose language",
+    "languages": {
+      "en": "English",
+      "fr": "French"
+    },
+    "maxDistance": "Max distance (ly)",
+    "planetType": "Planet type",
+    "showLabels": "Show labels",
+    "showAxes": "Show Equatorial Grid (RA/Dec)",
+    "showGcArrow": "Show Galactic Center Arrow",
+    "resetView": "Reset View to Earth",
+    "yes": "Yes",
+    "no": "No",
+    "types": {
+      "all": "All",
+      "gasGiant": "Gas Giant",
+      "neptuneLike": "Neptune-like",
+      "superEarth": "Super Earth",
+      "terrestrial": "Terrestrial"
+    }
+  },
+  "legend": {
+    "title": "Legend",
+    "earth": "Earth (Deep blue)",
+    "inside": "Planet inside equatorial grid",
+    "outside": "Planet outside equatorial grid",
+    "selected": "Selected planet",
+    "gridRadius": "Grid radius:"
+  },
+  "selection": {
+    "title": "Selection",
+    "name": "Name:",
+    "type": "Type:",
+    "ra": "RA:",
+    "dec": "Dec:",
+    "distance": "Distance:",
+    "none": "None",
+    "placeholder": "-"
+  },
+  "status": {
+    "noPlanetSelected": "No planet selected.",
+    "selectedPlanet": "Selected {name}.",
+    "loading": "Loading planets.csv...",
+    "loaded": "Loaded {count} planets. Drag to orbit, right-drag to pan, scroll to zoom.",
+    "distanceSummary": "{maxDistance} ly max ({visible}/{total} shown)",
+    "gridRadiusValue": "{value} ly",
+    "distanceValue": "{value} ly",
+    "loadError": "Could not load planets.csv: {message}",
+    "fileProtocolError": "This page is opened with file://, so browsers block reading planets.csv. Start a local server and open http://localhost instead.",
+    "planetsFetchFailed": "Failed to load planets.csv ({status})"
+  },
+  "fallback": {
+    "runLocalServer": "Run local server",
+    "localhost": "localhost:8000",
+    "httpServerCommand": "python -m http.server 8000",
+    "allPlanets": "All planets",
+    "fromCsv": "From planets.csv"
+  },
+  "objects": {
+    "earth": "Earth",
+    "reference": "Reference",
+    "sagittariusA": "Sagittarius A*",
+    "galacticCenter": "Galactic Center",
+    "unknown": "Unknown"
+  }
+}
