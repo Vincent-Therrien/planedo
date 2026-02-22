@@ -4,7 +4,7 @@
     "canvasAriaLabel": "Scene 3D des exoplanètes"
   },
   "header": {
-    "title": "Visualiseur de position des exoplanètes"
+    "title": "Visualiseur d'exoplanètes"
   },
   "controls": {
     "maxDistance": "Distance max (al)",
@@ -26,8 +26,8 @@
   "legend": {
     "title": "Légende",
     "earth": "Terre (bleu profond)",
-    "inside": "Planète a l'intérieur de la grille équatoriale",
-    "outside": "Planète a l'extérieur de la grille équatoriale",
+    "inside": "Planète à l'intérieur de la grille équatoriale",
+    "outside": "Planète à l'extérieur de la grille équatoriale",
     "selected": "Planète sélectionnée",
     "gridRadius": "Rayon de la grille :"
   },

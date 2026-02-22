@@ -4,15 +4,9 @@
     "canvasAriaLabel": "3D exoplanet scene"
   },
   "header": {
-    "title": "Exoplanet Position Viewer"
+    "title": "Exoplanet Viewer"
   },
   "controls": {
-    "languageSummary": "Language",
-    "languageLabel": "Choose language",
-    "languages": {
-      "en": "English",
-      "fr": "French"
-    },
     "maxDistance": "Max distance (ly)",
     "planetType": "Planet type",
     "showLabels": "Show labels",
