@@ -85,6 +85,8 @@
       }
     }
   </script>
+  <script src="./languages-data.js"></script>
+  <script src="./exoplanets-data.js"></script>
 
   <script type="module">
     import * as THREE from "three";
@@ -156,6 +158,9 @@
     }
 
     async function fetchLocale(locale) {
+      if (window.LOCALE_DATA && window.LOCALE_DATA[locale]) {
+        return window.LOCALE_DATA[locale];
+      }
       const response = await fetch(`./languages/${locale}.json`, { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`Locale file not found (${locale})`);
@@ -879,18 +884,14 @@
 
     async function loadPlanets() {
       try {
-        if (window.location.protocol === "file:") {
-          throw new Error(
-            "This page is opened with file://, so browsers block reading exoplanets.json. Start a local server and open http://localhost instead."
-          );
+        let jsonData = window.EXOPLANETS_DATA;
+        if (!jsonData) {
+          const response = await fetch("./exoplanets.json", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Failed to load exoplanets.json (${response.status})`);
+          }
+          jsonData = await response.json();
         }
-
-        const response = await fetch("./exoplanets.json", { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`Failed to load exoplanets.json (${response.status})`);
-        }
-
-        const jsonData = await response.json();
         planets = parseExoplanetsJson(jsonData);
         if (!planets.length) {
           throw new Error("exoplanets.json has no valid entries");
