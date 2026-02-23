@@ -8,8 +8,7 @@
   },
   "controls": {
     "maxDistance": "Distance maximale en années lumière (al)",
-    "planetType": "Type de planète",
-    "showLabels": "Afficher les étiquettes",
+    "discoveryMethods": "Méthode de découverte",
     "showAxes": "Afficher la grille équatoriale (AD/Dec)",
     "showGcArrow": "Afficher la flèche vers le centre galactique",
     "showSelectionGuides": "Montrer le triangle de sélection",
@@ -38,6 +37,8 @@
     "type": "Type :",
     "ra": "AD :",
     "dec": "Dec :",
+    "planets": "Planètes :",
+    "noPlanetDetails": "Aucun détail à afficher.",
     "distance": "Distance :",
     "none": "Aucune",
     "placeholder": "-"
@@ -47,7 +48,7 @@
     "selectedPlanet": "{name}",
     "loading": "Chargement de planets.csv...",
     "loaded": "{count} planètes chargées. Glissez pour orbiter, clic droit-glisse pour déplacer, molette pour zoomer.",
-    "distanceSummary": "{maxDistance} années lumière ({visible}/{total} affichées)",
+    "distanceSummary": "{maxDistance} années lumière ({visible} / {total} systèmes stellaires affichés)",
     "gridRadiusValue": "{value} al",
     "distanceValue": "{value} al",
     "loadError": "Impossible de charger planets.csv : {message}",
@@ -63,6 +64,7 @@
   },
   "objects": {
     "earth": "Terre",
+    "starSystem": "Système stellaire",
     "reference": "Reference",
     "sagittariusA": "Sagittarius A*",
     "galacticCenter": "Centre galactique",

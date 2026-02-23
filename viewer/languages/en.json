@@ -8,8 +8,7 @@
   },
   "controls": {
     "maxDistance": "Maximum distance in light years (ly)",
-    "planetType": "Planet type",
-    "showLabels": "Show labels",
+    "discoveryMethods": "Discovery method",
     "showAxes": "Show Equatorial Grid (RA/Dec)",
     "showGcArrow": "Show Galactic Center Arrow",
     "showSelectionGuides": "Show Selection Triangle",
@@ -39,6 +38,8 @@
     "ra": "RA:",
     "dec": "Dec:",
     "distance": "Distance:",
+    "planets": "Planets:",
+    "noPlanetDetails": "No planet details.",
     "none": "None",
     "placeholder": "-"
   },
@@ -47,7 +48,7 @@
     "selectedPlanet": "{name}",
     "loading": "Loading planets.csv...",
     "loaded": "Loaded {count} planets. Drag to orbit, right-drag to pan, scroll to zoom.",
-    "distanceSummary": "{maxDistance} ly max ({visible}/{total} shown)",
+    "distanceSummary": "{maxDistance} lightyears maximum ({visible} / {total} star systems shown)",
     "gridRadiusValue": "{value} ly",
     "distanceValue": "{value} ly",
     "loadError": "Could not load planets.csv: {message}",
@@ -64,6 +65,7 @@
   "objects": {
     "earth": "Earth",
     "reference": "Reference",
+    "starSystem": "Star System",
     "sagittariusA": "Sagittarius A*",
     "galacticCenter": "Galactic Center",
     "unknown": "Unknown"
