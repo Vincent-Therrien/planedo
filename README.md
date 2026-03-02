@@ -6,15 +6,18 @@
 ![Default view of the exoplanet viewer](assets/view.png "Default view")
 
 
+_________________
+
+
 ## Exoplanet Position Visualizer
 
 A simple Web page to view the position of confirmed exoplanets.
 
 
-### How to Access It
+### How to Use It
 
-- **Online**: Access https://vincent-therrien.github.io/planedo/home.html
-- **Offline**: Clone this repository and open the file `viewer/home.html` in a Web browser.
+Access https://vincent-therrien.github.io/planedo/home.html to use the online page or clone this
+repository and open the file `viewer/home.html` in a Web browser.
 
 
 ### Features
@@ -24,6 +27,7 @@ A simple Web page to view the position of confirmed exoplanets.
   - Right ascension and declination
   - Ecliptic and galactic planes
   - Indication for the direction toward the center of the galaxy
+- Filter exoplanets by discovery method and distance from Earth.
 - Provide data for selected star systems, such as mass and radius of each planet as well as links
   to NASA's exoplanet catalog.
 
@@ -33,6 +37,10 @@ is also accessible at https://eyes.nasa.gov/apps/exo/# (I made this project beca
 visualizing where the planets are located in the NASA viewer).
 
 
+_________________
+
+
+
 ## Visualisateur de positions d'exoplanètes
 
 Une page Web simple pour visualiser les positions d'exoplanètes dont l'existence est confirmée.
@@ -40,8 +48,8 @@ Une page Web simple pour visualiser les positions d'exoplanètes dont l'existenc
 
 ### Utilisation
 
-- **En ligne** : Accédez à la page https://vincent-therrien.github.io/planedo/home.html
-- **Hors ligne** : Clônez ce dépôt et ouvrez le ficher `viewer/home.html` dans un navigateur Web.
+Accédez à la page https://vincent-therrien.github.io/planedo/home.html ou clonez ce dépôt et ouvrez
+le ficher `viewer/home.html` dans un navigateur Web.
 
 
 ### Fonctionnalités
@@ -51,6 +59,7 @@ Une page Web simple pour visualiser les positions d'exoplanètes dont l'existenc
   - Ascension droite et déclinaison
   - Plans écliptique et galactique
   - Indicateur de la direction du centre de la galaxie
+- Filtrer les exoplanètes selon la méthode de découverte et leur distance de la Terre.
 - Liens vers le catalogue d'exoplanètes de la NASA et informations sur les caractéristiques des
   exoplanètes.
 
