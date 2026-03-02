@@ -1,77 +1,79 @@
 {
-  "meta": {
-    "title": "Exoplanet Viewer",
-    "canvasAriaLabel": "3D exoplanet scene"
-  },
-  "header": {
-    "title": "Exoplanet Viewer"
-  },
-  "controls": {
-    "maxDistance": "Maximum distance in light years (ly)",
-    "discoveryMethods": "Discovery method",
-    "showAxes": "Show Equatorial Grid (RA/Dec)",
-    "showGcArrow": "Show Galactic Center Arrow",
-    "showSelectionGuides": "Show Selection Triangle",
-    "resetView": "Reset View to Earth",
-    "panOutSeconds": "Pan-out duration (s)",
-    "panOutStart": "Pan Out",
-    "yes": "Yes",
-    "no": "No",
-    "types": {
-      "all": "All",
-      "gasGiant": "Gas Giant",
-      "neptuneLike": "Neptune-like",
-      "superEarth": "Super Earth",
-      "terrestrial": "Terrestrial"
-    }
-  },
-  "legend": {
-    "title": "Legend",
-    "earth": "Earth",
-    "inside": "Planet inside equatorial grid",
-    "outside": "Planet outside equatorial grid",
-    "selected": "Selected planet",
-    "gridRadius": "Grid radius:"
-  },
-  "selection": {
-    "title": "Selection",
-    "name": "Name:",
-    "type": "Type:",
-    "ra": "RA:",
-    "dec": "Dec:",
-    "distance": "Distance:",
-    "planets": "Planets:",
-    "noPlanetDetails": "No planet details.",
-    "none": "None",
-    "placeholder": "-",
-    "earthMasses": "Earth masses",
-    "earthRadii": "Earth radii"
-  },
-  "status": {
-    "noPlanetSelected": "No planet selected.",
-    "selectedPlanet": "{name}",
-    "loading": "Loading planets.csv...",
-    "loaded": "Loaded {count} planets. Drag to orbit, right-drag to pan, scroll to zoom.",
-    "distanceSummary": "{maxDistance} lightyears maximum ({visible} / {total} star systems shown)",
-    "gridRadiusValue": "{value} ly",
-    "distanceValue": "{value} ly",
-    "loadError": "Could not load planets.csv: {message}",
-    "fileProtocolError": "This page is opened with file://, so browsers block reading planets.csv. Start a local server and open http://localhost instead.",
-    "planetsFetchFailed": "Failed to load planets.csv ({status})"
-  },
-  "fallback": {
-    "runLocalServer": "Run local server",
-    "localhost": "localhost:8000",
-    "httpServerCommand": "python -m http.server 8000",
-    "allPlanets": "All planets",
-    "fromCsv": "From planets.csv"
-  },
-  "objects": {
-    "earth": "Earth",
-    "reference": "Reference",
-    "starSystem": "Star System",
-    "sagittariusA": "Sagittarius A*",
-    "galacticCenter": "Galactic Center",
-    "unknown": "Unknown"
-  }
+    "meta":  {
+                 "title":  "Exoplanet Viewer",
+                 "canvasAriaLabel":  "3D exoplanet scene"
+             },
+    "header":  {
+                   "title":  "Exoplanet Viewer"
+               },
+    "controls":  {
+                     "maxDistance":  "Maximum distance in light years (ly)",
+                     "discoveryMethods":  "Discovery method",
+                     "showAxes":  "Show Equatorial Grid (RA/Dec)",
+                     "showGcArrow":  "Show Galactic Center Arrow",
+                     "showSelectionGuides":  "Show Selection Triangle",
+                     "resetView":  "Reset View to Earth",
+                     "panOutSeconds":  "Pan-out duration (s)",
+                     "panOutStart":  "Pan Out",
+                     "yes":  "Yes",
+                     "no":  "No",
+                     "types":  {
+                                   "all":  "All",
+                                   "gasGiant":  "Gas Giant",
+                                   "neptuneLike":  "Neptune-like",
+                                   "superEarth":  "Super Earth",
+                                   "terrestrial":  "Terrestrial"
+                               },
+                     "showEclipticDisk":  "Show Ecliptic Plane Disk",
+                     "showGalacticPlaneDisk":  "Show Galactic Plane Disk"
+                 },
+    "legend":  {
+                   "title":  "Legend",
+                   "earth":  "Earth",
+                   "inside":  "Planet inside equatorial grid",
+                   "outside":  "Planet outside equatorial grid",
+                   "selected":  "Selected planet",
+                   "gridRadius":  "Grid radius:"
+               },
+    "selection":  {
+                      "title":  "Selection",
+                      "name":  "Name:",
+                      "type":  "Type:",
+                      "ra":  "RA:",
+                      "dec":  "Dec:",
+                      "distance":  "Distance:",
+                      "planets":  "Planets:",
+                      "noPlanetDetails":  "No planet details.",
+                      "none":  "None",
+                      "placeholder":  "-",
+                      "earthMasses":  "Earth masses",
+                      "earthRadii":  "Earth radii"
+                  },
+    "status":  {
+                   "noPlanetSelected":  "No planet selected.",
+                   "selectedPlanet":  "{name}",
+                   "loading":  "Loading planets.csv...",
+                   "loaded":  "Loaded {count} planets. Drag to orbit, right-drag to pan, scroll to zoom.",
+                   "distanceSummary":  "{maxDistance} lightyears maximum ({visible} / {total} star systems shown)",
+                   "gridRadiusValue":  "{value} ly",
+                   "distanceValue":  "{value} ly",
+                   "loadError":  "Could not load planets.csv: {message}",
+                   "fileProtocolError":  "This page is opened with file://, so browsers block reading planets.csv. Start a local server and open http://localhost instead.",
+                   "planetsFetchFailed":  "Failed to load planets.csv ({status})"
+               },
+    "fallback":  {
+                     "runLocalServer":  "Run local server",
+                     "localhost":  "localhost:8000",
+                     "httpServerCommand":  "python -m http.server 8000",
+                     "allPlanets":  "All planets",
+                     "fromCsv":  "From planets.csv"
+                 },
+    "objects":  {
+                    "earth":  "Earth",
+                    "reference":  "Reference",
+                    "starSystem":  "Star System",
+                    "sagittariusA":  "Sagittarius A*",
+                    "galacticCenter":  "Galactic Center",
+                    "unknown":  "Unknown"
+                }
 }

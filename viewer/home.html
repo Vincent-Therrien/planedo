@@ -45,6 +45,16 @@
           <input id="show-gc-arrow" type="checkbox" />
         </div>
 
+        <div class="control axis-toggle">
+          <label id="label-show-ecliptic-disk" for="show-ecliptic-disk"></label>
+          <input id="show-ecliptic-disk" type="checkbox" />
+        </div>
+
+        <div class="control axis-toggle">
+          <label id="label-show-galactic-disk" for="show-galactic-disk"></label>
+          <input id="show-galactic-disk" type="checkbox" />
+        </div>
+
         <div class="control">
           <button id="reset-view" type="button"></button>
         </div>
@@ -112,6 +122,8 @@
     const discoveryMethodsEl = document.getElementById("discovery-methods");
     const showAxesEl = document.getElementById("show-axes");
     const showGalacticArrowEl = document.getElementById("show-gc-arrow");
+    const showEclipticDiskEl = document.getElementById("show-ecliptic-disk");
+    const showGalacticDiskEl = document.getElementById("show-galactic-disk");
     const showSelectionGuidesEl = document.getElementById("show-selection-guides");
     const gridRadiusEl = document.getElementById("grid-radius-ly");
     const resetViewEl = document.getElementById("reset-view");
@@ -123,7 +135,7 @@
     let currentLocale = FALLBACK_LOCALE;
 
     const pointRadius = 0.5;
-    const PLANET_MIN_SCREEN_RADIUS_PX = 0.75;
+    const PLANET_MIN_SCREEN_RADIUS_PX = 1;
     const PLANET_SCREEN_RADIUS_PX = 2;
     const PARSEC_TO_LIGHTYEAR = 3.26156;
     const raycaster = new THREE.Raycaster();
@@ -133,13 +145,16 @@
     const RA_TARGET_SCREEN_RADIUS_PX = 250;
     const MAX_ZOOM_OUT_GRID_RADIUS_LY = 27000;
     const COLOR_EARTH = 0x0000ff;
-    const COLOR_PLANET_INSIDE_GRID = 0xffffff;//0x8fb8ff;
+    const COLOR_PLANET_INSIDE_GRID = 0x8fb8ff;
     const COLOR_PLANET_OUTSIDE_GRID = 0xffffff;
     const COLOR_SELECTED = 0xff0000;
     const COLOR_GALACTIC_CENTER = 0xffa500;
     const GALACTIC_CENTER_RA_DEG = (17 + (45 / 60) + (40.04 / 3600)) * 15;
     const GALACTIC_CENTER_DEC_DEG = -29 - (28.1 / 3600);
     const GALACTIC_CENTER_DISTANCE_LY = 27000;
+    const ECLIPTIC_OBLIQUITY_DEG = 23.439281;
+    const GALACTIC_NORTH_RA_DEG = 192.85948;
+    const GALACTIC_NORTH_DEC_DEG = 27.12825;
     const PAN_OUT_DISTANCE_MULTIPLIER = 45;
     const PAN_OUT_ROTATION_TURNS = 0.7;
     const PAN_OUT_MIN_SECONDS = 1;
@@ -216,6 +231,12 @@
           : discoveryMethodsLabel;
       document.getElementById("label-show-axes").textContent = t("controls.showAxes");
       document.getElementById("label-show-gc-arrow").textContent = t("controls.showGcArrow");
+      const eclipticLabel = t("controls.showEclipticDisk");
+      document.getElementById("label-show-ecliptic-disk").textContent =
+        eclipticLabel === "controls.showEclipticDisk" ? "Show Ecliptic Plane Disk" : eclipticLabel;
+      const galacticDiskLabel = t("controls.showGalacticPlaneDisk");
+      document.getElementById("label-show-galactic-disk").textContent =
+        galacticDiskLabel === "controls.showGalacticPlaneDisk" ? "Show Galactic Plane Disk" : galacticDiskLabel;
       const selectionGuidesLabel = t("controls.showSelectionGuides");
       document.getElementById("label-show-selection-guides").textContent =
         selectionGuidesLabel === "controls.showSelectionGuides"
@@ -371,6 +392,48 @@
     const raGroup = new THREE.Group();
     raGroup.visible = false;
     scene.add(raGroup);
+
+    const eclipticGroup = new THREE.Group();
+    eclipticGroup.visible = false;
+    scene.add(eclipticGroup);
+
+    const eclipticDisk = new THREE.Mesh(
+      new THREE.CircleGeometry(RA_BASE_RADIUS, 192),
+      new THREE.MeshBasicMaterial({
+        color: 0xf5d76e,
+        transparent: true,
+        opacity: 0.14,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      })
+    );
+    eclipticDisk.rotation.x = -Math.PI / 2 + THREE.MathUtils.degToRad(ECLIPTIC_OBLIQUITY_DEG);
+    eclipticGroup.add(eclipticDisk);
+
+    const galacticDiskGroup = new THREE.Group();
+    galacticDiskGroup.visible = false;
+    scene.add(galacticDiskGroup);
+
+    const galacticDisk = new THREE.Mesh(
+      new THREE.CircleGeometry(RA_BASE_RADIUS, 192),
+      new THREE.MeshBasicMaterial({
+        color: 0x66b7ff,
+        transparent: true,
+        opacity: 0.14,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      })
+    );
+    const galacticNorthRa = THREE.MathUtils.degToRad(GALACTIC_NORTH_RA_DEG);
+    const galacticNorthDec = THREE.MathUtils.degToRad(GALACTIC_NORTH_DEC_DEG);
+    const galacticNorthVector = new THREE.Vector3(
+      Math.cos(galacticNorthDec) * Math.cos(galacticNorthRa),
+      Math.sin(galacticNorthDec),
+      -Math.cos(galacticNorthDec) * Math.sin(galacticNorthRa)
+    ).normalize();
+    galacticDisk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), galacticNorthVector);
+    galacticDiskGroup.add(galacticDisk);
+
     const selectionGuideGroup = new THREE.Group();
     selectionGuideGroup.visible = false;
     scene.add(selectionGuideGroup);
@@ -778,8 +841,12 @@
         const earthRadiiLabel = t("selection.earthRadii");
         const massValue = Number.parseFloat(planet.massEarth);
         const radiusValue = Number.parseFloat(planet.radiusEarth);
-        const massDisplay = Number.isFinite(massValue) ? formatLocaleDecimal(massValue, 3) : planet.massEarth;
-        const radiusDisplay = Number.isFinite(radiusValue) ? formatLocaleDecimal(radiusValue, 3) : planet.radiusEarth;
+        const massDisplay = Number.isFinite(massValue)
+          ? formatLocaleDecimal(massValue, 3)
+          : (/^unk(n)?own$/i.test(String(planet.massEarth).trim()) ? "?" : planet.massEarth);
+        const radiusDisplay = Number.isFinite(radiusValue)
+          ? formatLocaleDecimal(radiusValue, 3)
+          : (/^unk(n)?own$/i.test(String(planet.radiusEarth).trim()) ? "?" : planet.radiusEarth);
         details.textContent =
           `Method: ${planet.discoveryMethod} | Year: ${planet.discoveryYear} | ` +
           `Mass: ${massDisplay} ${earthMassesLabel} | Radius: ${radiusDisplay} ${earthRadiiLabel}`;
@@ -864,6 +931,8 @@
       earthMesh.visible = 0 <= maxDistanceLy;
       galacticCenterMesh.visible = true;
       raGroup.visible = showAxesEl.checked;
+      eclipticGroup.visible = showEclipticDiskEl.checked;
+      galacticDiskGroup.visible = showGalacticDiskEl.checked;
       galacticCenterArrow.visible = showGalacticArrowEl.checked;
       for (const obj of raGroup.children) {
         if (obj.userData?.isOverlayLabel) {
@@ -1056,6 +1125,10 @@
       const scale = Math.max(0.001, targetWorldRadius / RA_BASE_RADIUS);
       raGroup.position.copy(earthMesh.position);
       raGroup.scale.setScalar(scale);
+      eclipticGroup.position.copy(earthMesh.position);
+      eclipticGroup.scale.setScalar(scale);
+      galacticDiskGroup.position.copy(earthMesh.position);
+      galacticDiskGroup.scale.setScalar(scale);
       galacticCenterArrow.position.copy(earthMesh.position);
       galacticCenterArrow.setLength(
         Math.max(12, targetWorldRadius * 0.85),
@@ -1174,6 +1247,8 @@
     distanceRangeEl.addEventListener("input", applyFilters);
     showAxesEl.addEventListener("change", applyFilters);
     showGalacticArrowEl.addEventListener("change", applyFilters);
+    showEclipticDiskEl.addEventListener("change", applyFilters);
+    showGalacticDiskEl.addEventListener("change", applyFilters);
     showSelectionGuidesEl.addEventListener("change", applyFilters);
     resetViewEl.addEventListener("click", resetViewToEarth);
     panOutStartEl.addEventListener("click", startPanOutAnimation);
@@ -1226,6 +1301,8 @@
 
       showAxesEl.checked = true;
       showGalacticArrowEl.checked = false;
+      showEclipticDiskEl.checked = false;
+      showGalacticDiskEl.checked = false;
       showSelectionGuidesEl.checked = true;
       nameEl.textContent = t("fallback.allPlanets");
       classEl.textContent = "From exoplanets.json";

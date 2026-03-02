@@ -1,77 +1,79 @@
 {
-  "meta": {
-    "title": "Visualiseur d'exoplanètes",
-    "canvasAriaLabel": "Scene 3D des exoplanètes"
-  },
-  "header": {
-    "title": "Visualiseur d'exoplanètes"
-  },
-  "controls": {
-    "maxDistance": "Distance maximale en années lumière (al)",
-    "discoveryMethods": "Méthode de découverte",
-    "showAxes": "Afficher la grille équatoriale (AD/Dec)",
-    "showGcArrow": "Afficher la flèche vers le centre galactique",
-    "showSelectionGuides": "Montrer le triangle de sélection",
-    "resetView": "Recentrer sur la Terre",
-    "panOutSeconds": "Durée panoramique (s)",
-    "panOutStart": "Panoramique",
-    "yes": "Oui",
-    "no": "Non",
-    "types": {
-      "all": "Toutes",
-      "gasGiant": "Géante gazeuse",
-      "neptuneLike": "Type Neptune",
-      "superEarth": "Super-Terre",
-      "terrestrial": "Tellurique"
-    }
-  },
-  "legend": {
-    "title": "Légende",
-    "earth": "Terre",
-    "inside": "Planète à l'intérieur de la grille équatoriale",
-    "outside": "Planète à l'extérieur de la grille équatoriale",
-    "selected": "Planète sélectionnée",
-    "gridRadius": "Rayon de la grille :"
-  },
-  "selection": {
-    "title": "Sélection",
-    "name": "Nom :",
-    "type": "Type :",
-    "ra": "AD :",
-    "dec": "Dec :",
-    "planets": "Planètes :",
-    "noPlanetDetails": "Aucun détail à afficher.",
-    "distance": "Distance :",
-    "none": "Aucune",
-    "placeholder": "-",
-    "earthMasses": "masses terrestres",
-    "earthRadii": "rayons terrestres"
-  },
-  "status": {
-    "noPlanetSelected": "Aucune planète sélectionnée.",
-    "selectedPlanet": "{name}",
-    "loading": "Chargement de planets.csv...",
-    "loaded": "{count} planètes chargées. Glissez pour orbiter, clic droit-glisse pour déplacer, molette pour zoomer.",
-    "distanceSummary": "{maxDistance} années lumière ({visible} / {total} systèmes stellaires affichés)",
-    "gridRadiusValue": "{value} al",
-    "distanceValue": "{value} al",
-    "loadError": "Impossible de charger planets.csv : {message}",
-    "fileProtocolError": "Cette page est ouverte en file://, donc le navigateur bloque la lecture de planets.csv. Lancez un serveur local et ouvrez http://localhost.",
-    "planetsFetchFailed": "Échec du chargement de planets.csv ({status})"
-  },
-  "fallback": {
-    "runLocalServer": "Lancer un serveur local",
-    "localhost": "localhost:8000",
-    "httpServerCommand": "python -m http.server 8000",
-    "allPlanets": "Toutes les planètes",
-    "fromCsv": "Depuis planets.csv"
-  },
-  "objects": {
-    "earth": "Terre",
-    "starSystem": "Système stellaire",
-    "reference": "Reference",
-    "sagittariusA": "Sagittarius A*",
-    "galacticCenter": "Centre galactique",
-    "unknown": "Inconnu"
-  }
+    "meta":  {
+                 "title":  "Visualiseur d\u0027exoplanètes",
+                 "canvasAriaLabel":  "Scene 3D des exoplanètes"
+             },
+    "header":  {
+                   "title":  "Visualiseur d\u0027exoplanètes"
+               },
+    "controls":  {
+                     "maxDistance":  "Distance maximale en années lumière (al)",
+                     "discoveryMethods":  "Méthode de découverte",
+                     "showAxes":  "Afficher la grille équatoriale (AD/Dec)",
+                     "showGcArrow":  "Afficher la flèche vers le centre galactique",
+                     "showSelectionGuides":  "Montrer le triangle de sélection",
+                     "resetView":  "Recentrer sur la Terre",
+                     "panOutSeconds":  "Durée panoramique (s)",
+                     "panOutStart":  "Panoramique",
+                     "yes":  "Oui",
+                     "no":  "Non",
+                     "types":  {
+                                   "all":  "Toutes",
+                                   "gasGiant":  "Géante gazeuse",
+                                   "neptuneLike":  "Type Neptune",
+                                   "superEarth":  "Super-Terre",
+                                   "terrestrial":  "Tellurique"
+                               },
+                     "showEclipticDisk":  "Afficher le disque du plan écliptique",
+                     "showGalacticPlaneDisk":  "Afficher le disque du plan galactique"
+                 },
+    "legend":  {
+                   "title":  "Légende",
+                   "earth":  "Terre",
+                   "inside":  "Planète à l\u0027intérieur de la grille équatoriale",
+                   "outside":  "Planète à l\u0027extérieur de la grille équatoriale",
+                   "selected":  "Planète sélectionnée",
+                   "gridRadius":  "Rayon de la grille :"
+               },
+    "selection":  {
+                      "title":  "Sélection",
+                      "name":  "Nom :",
+                      "type":  "Type :",
+                      "ra":  "AD :",
+                      "dec":  "Dec :",
+                      "planets":  "Planètes :",
+                      "noPlanetDetails":  "Aucun détail à afficher.",
+                      "distance":  "Distance :",
+                      "none":  "Aucune",
+                      "placeholder":  "-",
+                      "earthMasses":  "masses terrestres",
+                      "earthRadii":  "rayons terrestres"
+                  },
+    "status":  {
+                   "noPlanetSelected":  "Aucune planète sélectionnée.",
+                   "selectedPlanet":  "{name}",
+                   "loading":  "Chargement de planets.csv...",
+                   "loaded":  "{count} planètes chargées. Glissez pour orbiter, clic droit-glisse pour déplacer, molette pour zoomer.",
+                   "distanceSummary":  "{maxDistance} années lumière ({visible} / {total} systèmes stellaires affichés)",
+                   "gridRadiusValue":  "{value} al",
+                   "distanceValue":  "{value} al",
+                   "loadError":  "Impossible de charger planets.csv : {message}",
+                   "fileProtocolError":  "Cette page est ouverte en file://, donc le navigateur bloque la lecture de planets.csv. Lancez un serveur local et ouvrez http://localhost.",
+                   "planetsFetchFailed":  "Échec du chargement de planets.csv ({status})"
+               },
+    "fallback":  {
+                     "runLocalServer":  "Lancer un serveur local",
+                     "localhost":  "localhost:8000",
+                     "httpServerCommand":  "python -m http.server 8000",
+                     "allPlanets":  "Toutes les planètes",
+                     "fromCsv":  "Depuis planets.csv"
+                 },
+    "objects":  {
+                    "earth":  "Terre",
+                    "starSystem":  "Système stellaire",
+                    "reference":  "Reference",
+                    "sagittariusA":  "Sagittarius A*",
+                    "galacticCenter":  "Centre galactique",
+                    "unknown":  "Inconnu"
+                }
 }
