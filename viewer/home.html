@@ -11,10 +11,10 @@
     <aside class="sidebar">
       <h1 id="heading-title"></h1>
       <div class="locale-row">
-        <span class="locale-icon" aria-hidden="true">ðŸŒ</span>
+        <span class="locale-icon" aria-hidden="true">&#127760;</span>
         <select id="locale-select" aria-label="Language">
           <option value="en">en - English</option>
-          <option value="fr">fr - FranÃ§ais</option>
+          <option value="fr">fr - Fran&ccedil;ais</option>
         </select>
       </div>
 
@@ -47,6 +47,12 @@
 
         <div class="control">
           <button id="reset-view" type="button"></button>
+        </div>
+
+        <div class="control">
+          <label id="label-pan-out-seconds" for="pan-out-seconds"></label>
+          <input id="pan-out-seconds" type="number" min="1" max="120" step="1" value="12" />
+          <button id="pan-out-start" type="button"></button>
         </div>
       </div>
 
@@ -109,29 +115,35 @@
     const showSelectionGuidesEl = document.getElementById("show-selection-guides");
     const gridRadiusEl = document.getElementById("grid-radius-ly");
     const resetViewEl = document.getElementById("reset-view");
+    const panOutSecondsEl = document.getElementById("pan-out-seconds");
+    const panOutStartEl = document.getElementById("pan-out-start");
     const localeSelectEl = document.getElementById("locale-select");
 
     let strings = {};
     let currentLocale = FALLBACK_LOCALE;
 
+    const pointRadius = 0.5;
+    const PLANET_MIN_SCREEN_RADIUS_PX = 0.5;
+    const PLANET_SCREEN_RADIUS_PX = 2;
     const PARSEC_TO_LIGHTYEAR = 3.26156;
-    const pointRadius = 0.75;
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const raLabelTextures = [];
     const RA_BASE_RADIUS = 20;
     const RA_TARGET_SCREEN_RADIUS_PX = 250;
     const MAX_ZOOM_OUT_GRID_RADIUS_LY = 27000;
-    const PLANET_MIN_SCREEN_RADIUS_PX = 1;
-    const PLANET_SCREEN_RADIUS_PX = 3;
     const COLOR_EARTH = 0x0000ff;
-    const COLOR_PLANET_INSIDE_GRID = 0x8fb8ff;
+    const COLOR_PLANET_INSIDE_GRID = 0xffffff;//0x8fb8ff;
     const COLOR_PLANET_OUTSIDE_GRID = 0xffffff;
     const COLOR_SELECTED = 0xff0000;
     const COLOR_GALACTIC_CENTER = 0xffa500;
     const GALACTIC_CENTER_RA_DEG = (17 + (45 / 60) + (40.04 / 3600)) * 15;
     const GALACTIC_CENTER_DEC_DEG = -29 - (28.1 / 3600);
     const GALACTIC_CENTER_DISTANCE_LY = 27000;
+    const PAN_OUT_DISTANCE_MULTIPLIER = 45;
+    const PAN_OUT_ROTATION_TURNS = 0.7;
+    const PAN_OUT_MIN_SECONDS = 1;
+    const PAN_OUT_MAX_SECONDS = 120;
 
     let axisRange = 100;
     let planets = [];
@@ -141,6 +153,7 @@
     let pointerMoved = false;
     let pointerDownX = 0;
     let pointerDownY = 0;
+    let panOutAnimation = null;
 
     function formatTemplate(template, vars = {}) {
       return String(template).replace(/\{(\w+)\}/g, (_, key) => (key in vars ? String(vars[key]) : `{${key}}`));
@@ -209,6 +222,12 @@
           ? "Show Selection Triangle"
           : selectionGuidesLabel;
       document.getElementById("reset-view").textContent = t("controls.resetView");
+      const panOutDurationLabel = t("controls.panOutSeconds");
+      document.getElementById("label-pan-out-seconds").textContent =
+        panOutDurationLabel === "controls.panOutSeconds" ? "Pan-out duration (s)" : panOutDurationLabel;
+      const panOutStartLabel = t("controls.panOutStart");
+      document.getElementById("pan-out-start").textContent =
+        panOutStartLabel === "controls.panOutStart" ? "Pan Out" : panOutStartLabel;
 
       document.getElementById("legend-title").textContent = t("legend.title");
       document.getElementById("legend-earth").textContent = t("legend.earth");
@@ -927,7 +946,7 @@
         distanceRangeEl.min = "1";
         distanceRangeEl.max = String(Math.ceil(maxDistanceLy));
         distanceRangeEl.step = "1";
-        distanceRangeEl.value = String(Math.max(1, Math.min(250, Math.ceil(maxDistanceLy))));
+        distanceRangeEl.value = String(Math.max(1, Math.min(2000, Math.ceil(maxDistanceLy))));
 
         updateZoomLimits();
         controls.update();
@@ -1045,6 +1064,7 @@
       );
       updatePlanetBaseColors(targetWorldRadius);
       updateSelectionGuides();
+      updatePanOutAnimation(performance.now());
       raGroup.children.forEach((obj) => {
         if (obj.type === "Sprite") {
           obj.quaternion.copy(camera.quaternion);
@@ -1055,7 +1075,97 @@
       requestAnimationFrame(animate);
     }
 
+    function stopPanOutAnimation() {
+      if (!panOutAnimation) {
+        return;
+      }
+      panOutAnimation = null;
+      controls.enabled = true;
+      panOutStartEl.disabled = false;
+    }
+
+    function getPanOutDurationSeconds() {
+      const raw = Number.parseFloat(panOutSecondsEl.value);
+      const safe = Number.isFinite(raw) ? raw : 12;
+      const clamped = Math.min(PAN_OUT_MAX_SECONDS, Math.max(PAN_OUT_MIN_SECONDS, safe));
+      const rounded = Math.round(clamped);
+      panOutSecondsEl.value = String(rounded);
+      return rounded;
+    }
+
+    function startPanOutAnimation() {
+      stopPanOutAnimation();
+      controls.target.copy(earthMesh.position);
+      camera.position.set(0, 120, 250);
+      controls.update();
+
+      const durationSeconds = getPanOutDurationSeconds();
+      const center = earthMesh.position.clone();
+      const startOffset = camera.position.clone().sub(center);
+      const startSpherical = new THREE.Spherical().setFromVector3(startOffset);
+      panOutAnimation = {
+        startTimeMs: performance.now(),
+        durationMs: durationSeconds * 1000,
+        center,
+        startSpherical,
+        endRadius: startSpherical.radius * PAN_OUT_DISTANCE_MULTIPLIER,
+        thetaDelta: THREE.MathUtils.degToRad(360 * PAN_OUT_ROTATION_TURNS),
+      };
+
+      controls.enabled = false;
+      panOutStartEl.disabled = true;
+    }
+
+    function updatePanOutAnimation(nowMs) {
+      if (!panOutAnimation) {
+        return;
+      }
+
+      const elapsedMs = nowMs - panOutAnimation.startTimeMs;
+      const progress = Math.min(1, Math.max(0, elapsedMs / panOutAnimation.durationMs));
+      const finalSecondFraction = Math.min(1, 1000 / panOutAnimation.durationMs);
+      const finalPhaseStart = Math.max(0, 1 - finalSecondFraction);
+      let eased;
+      if (progress <= finalPhaseStart) {
+        eased = Math.pow(progress, 3);
+      } else {
+        const finalPhaseT = (progress - finalPhaseStart) / Math.max(1e-6, 1 - finalPhaseStart);
+        const startValue = Math.pow(finalPhaseStart, 3);
+        const startSlope = 3 * Math.pow(finalPhaseStart, 2);
+        const phaseDuration = Math.max(1e-6, 1 - finalPhaseStart);
+        const m0 = startSlope * phaseDuration;
+        const m1 = 0;
+
+        const t2 = finalPhaseT * finalPhaseT;
+        const t3 = t2 * finalPhaseT;
+        const h00 = (2 * t3) - (3 * t2) + 1;
+        const h10 = t3 - (2 * t2) + finalPhaseT;
+        const h01 = (-2 * t3) + (3 * t2);
+        const h11 = t3 - t2;
+        eased = (h00 * startValue) + (h10 * m0) + h01 + (h11 * m1);
+      }
+
+      const radius = THREE.MathUtils.lerp(
+        panOutAnimation.startSpherical.radius,
+        panOutAnimation.endRadius,
+        eased
+      );
+      const theta = panOutAnimation.startSpherical.theta + (panOutAnimation.thetaDelta * eased);
+      const phi = panOutAnimation.startSpherical.phi;
+      const offset = new THREE.Vector3().setFromSpherical(new THREE.Spherical(radius, phi, theta));
+
+      controls.target.copy(panOutAnimation.center);
+      camera.position.copy(panOutAnimation.center).add(offset);
+
+      if (progress >= 1) {
+        panOutAnimation = null;
+        controls.enabled = true;
+        panOutStartEl.disabled = false;
+      }
+    }
+
     function resetViewToEarth() {
+      stopPanOutAnimation();
       controls.target.copy(earthMesh.position);
       camera.position.set(0, 120, 250);
       controls.update();
@@ -1066,11 +1176,15 @@
     showGalacticArrowEl.addEventListener("change", applyFilters);
     showSelectionGuidesEl.addEventListener("change", applyFilters);
     resetViewEl.addEventListener("click", resetViewToEarth);
+    panOutStartEl.addEventListener("click", startPanOutAnimation);
     localeSelectEl.addEventListener("change", async () => {
       await switchLocale(localeSelectEl.value);
     });
 
     renderer.domElement.addEventListener("mousedown", (event) => {
+      if (panOutAnimation) {
+        stopPanOutAnimation();
+      }
       if (event.button !== 0) {
         return;
       }

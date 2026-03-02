@@ -13,6 +13,8 @@
     "showGcArrow": "Afficher la flèche vers le centre galactique",
     "showSelectionGuides": "Montrer le triangle de sélection",
     "resetView": "Recentrer sur la Terre",
+    "panOutSeconds": "Durée panoramique (s)",
+    "panOutStart": "Panoramique",
     "yes": "Oui",
     "no": "Non",
     "types": {
