@@ -41,7 +41,9 @@
     "noPlanetDetails": "Aucun détail à afficher.",
     "distance": "Distance :",
     "none": "Aucune",
-    "placeholder": "-"
+    "placeholder": "-",
+    "earthMasses": "masses terrestres",
+    "earthRadii": "rayons terrestres"
   },
   "status": {
     "noPlanetSelected": "Aucune planète sélectionnée.",

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -11,10 +11,10 @@
     <aside class="sidebar">
       <h1 id="heading-title"></h1>
       <div class="locale-row">
-        <span class="locale-icon" aria-hidden="true">🌐</span>
+        <span class="locale-icon" aria-hidden="true">ðŸŒ</span>
         <select id="locale-select" aria-label="Language">
           <option value="en">en - English</option>
-          <option value="fr">fr - Français</option>
+          <option value="fr">fr - FranÃ§ais</option>
         </select>
       </div>
 
@@ -150,6 +150,14 @@
       const value = path.split(".").reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), strings);
       const template = value !== undefined ? value : path;
       return formatTemplate(template, vars);
+    }
+
+    function formatLocaleDecimal(value, fractionDigits = 3) {
+      const numberLocale = currentLocale === "fr" ? "fr-FR" : "en-US";
+      return value.toLocaleString(numberLocale, {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      });
     }
 
     function resolveLocaleFromBrowser() {
@@ -747,9 +755,15 @@
         item.appendChild(title);
 
         const details = document.createElement("p");
+        const earthMassesLabel = t("selection.earthMasses");
+        const earthRadiiLabel = t("selection.earthRadii");
+        const massValue = Number.parseFloat(planet.massEarth);
+        const radiusValue = Number.parseFloat(planet.radiusEarth);
+        const massDisplay = Number.isFinite(massValue) ? formatLocaleDecimal(massValue, 3) : planet.massEarth;
+        const radiusDisplay = Number.isFinite(radiusValue) ? formatLocaleDecimal(radiusValue, 3) : planet.radiusEarth;
         details.textContent =
           `Method: ${planet.discoveryMethod} | Year: ${planet.discoveryYear} | ` +
-          `Mass: ${planet.massEarth} Mearth | Radius: ${planet.radiusEarth} Rearth`;
+          `Mass: ${massDisplay} ${earthMassesLabel} | Radius: ${radiusDisplay} ${earthRadiiLabel}`;
         item.appendChild(details);
 
         if (planet.catalogLink && planet.catalogLink !== "Unknown") {
@@ -1114,3 +1128,4 @@
   </script>
 </body>
 </html>
+
