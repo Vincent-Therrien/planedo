@@ -1,0 +1,210 @@
+{
+    "1992": {
+        "Pulsar Timing": 2
+    },
+    "1994": {
+        "Pulsar Timing": 1
+    },
+    "1995": {
+        "Radial Velocity": 1
+    },
+    "1996": {
+        "Radial Velocity": 6
+    },
+    "1997": {
+        "Radial Velocity": 1
+    },
+    "1998": {
+        "Radial Velocity": 6
+    },
+    "1999": {
+        "Radial Velocity": 13
+    },
+    "2000": {
+        "Radial Velocity": 16
+    },
+    "2001": {
+        "Radial Velocity": 12
+    },
+    "2002": {
+        "Radial Velocity": 28,
+        "Transit": 1
+    },
+    "2003": {
+        "Radial Velocity": 21,
+        "Pulsar Timing": 1
+    },
+    "2004": {
+        "Imaging": 3,
+        "Radial Velocity": 18,
+        "Microlensing": 1,
+        "Transit": 5
+    },
+    "2005": {
+        "Imaging": 1,
+        "Radial Velocity": 33,
+        "Microlensing": 2
+    },
+    "2006": {
+        "Radial Velocity": 21,
+        "Imaging": 5,
+        "Transit": 5,
+        "Microlensing": 1
+    },
+    "2007": {
+        "Radial Velocity": 34,
+        "Imaging": 1,
+        "Transit": 16,
+        "Pulsation Timing Variations": 1
+    },
+    "2008": {
+        "Radial Velocity": 36,
+        "Imaging": 7,
+        "Transit": 16,
+        "Microlensing": 4
+    },
+    "2009": {
+        "Radial Velocity": 70,
+        "Transit": 18,
+        "Eclipse Timing Variations": 1,
+        "Microlensing": 2
+    },
+    "2010": {
+        "Radial Velocity": 41,
+        "Imaging": 6,
+        "Transit": 47,
+        "Microlensing": 2,
+        "Eclipse Timing Variations": 2
+    },
+    "2011": {
+        "Radial Velocity": 43,
+        "Imaging": 3,
+        "Transit": 79,
+        "Eclipse Timing Variations": 5,
+        "Orbital Brightness Modulation": 2,
+        "Transit Timing Variations": 1,
+        "Microlensing": 1,
+        "Pulsar Timing": 1
+    },
+    "2012": {
+        "Radial Velocity": 35,
+        "Transit": 93,
+        "Transit Timing Variations": 1,
+        "Microlensing": 7,
+        "Eclipse Timing Variations": 1,
+        "Imaging": 2
+    },
+    "2013": {
+        "Imaging": 7,
+        "Radial Velocity": 33,
+        "Transit": 80,
+        "Astrometry": 1,
+        "Transit Timing Variations": 1,
+        "Orbital Brightness Modulation": 1,
+        "Microlensing": 5
+    },
+    "2014": {
+        "Radial Velocity": 48,
+        "Transit": 798,
+        "Imaging": 2,
+        "Orbital Brightness Modulation": 3,
+        "Transit Timing Variations": 12,
+        "Microlensing": 6
+    },
+    "2015": {
+        "Imaging": 5,
+        "Eclipse Timing Variations": 1,
+        "Radial Velocity": 46,
+        "Transit": 99,
+        "Microlensing": 4
+    },
+    "2016": {
+        "Imaging": 2,
+        "Radial Velocity": 50,
+        "Transit": 1432,
+        "Pulsation Timing Variations": 1,
+        "Transit Timing Variations": 1,
+        "Microlensing": 10
+    },
+    "2017": {
+        "Radial Velocity": 49,
+        "Transit": 87,
+        "Imaging": 3,
+        "Transit Timing Variations": 1,
+        "Microlensing": 9,
+        "Eclipse Timing Variations": 1,
+        "Pulsar Timing": 2
+    },
+    "2018": {
+        "Radial Velocity": 46,
+        "Imaging": 3,
+        "Transit": 242,
+        "Eclipse Timing Variations": 1,
+        "Microlensing": 22,
+        "Transit Timing Variations": 1
+    },
+    "2019": {
+        "Radial Velocity": 65,
+        "Transit": 107,
+        "Disk Kinematics": 1,
+        "Imaging": 4,
+        "Microlensing": 14,
+        "Transit Timing Variations": 3,
+        "Eclipse Timing Variations": 2
+    },
+    "2020": {
+        "Radial Velocity": 46,
+        "Transit": 165,
+        "Microlensing": 20,
+        "Transit Timing Variations": 1,
+        "Imaging": 2
+    },
+    "2021": {
+        "Radial Velocity": 76,
+        "Imaging": 6,
+        "Transit": 457,
+        "Orbital Brightness Modulation": 3,
+        "Microlensing": 21,
+        "Transit Timing Variations": 1
+    },
+    "2022": {
+        "Eclipse Timing Variations": 2,
+        "Imaging": 4,
+        "Transit": 191,
+        "Radial Velocity": 118,
+        "Astrometry": 1,
+        "Microlensing": 51,
+        "Transit Timing Variations": 2
+    },
+    "2023": {
+        "Radial Velocity": 57,
+        "Imaging": 7,
+        "Transit Timing Variations": 4,
+        "Transit": 224,
+        "Astrometry": 1,
+        "Microlensing": 30,
+        "Eclipse Timing Variations": 1
+    },
+    "2024": {
+        "Imaging": 11,
+        "Transit": 187,
+        "Radial Velocity": 28,
+        "Microlensing": 28,
+        "Transit Timing Variations": 4,
+        "Pulsar Timing": 1
+    },
+    "2025": {
+        "Radial Velocity": 61,
+        "Microlensing": 23,
+        "Transit": 141,
+        "Astrometry": 3,
+        "Imaging": 6,
+        "Transit Timing Variations": 6
+    },
+    "2026": {
+        "Radial Velocity": 8,
+        "Imaging": 2,
+        "Microlensing": 3,
+        "Transit": 10
+    }
+}
